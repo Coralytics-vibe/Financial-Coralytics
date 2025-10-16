@@ -35,5 +35,6 @@ export type Profit = {
   date: Date;
   value: number;
   source: string; // e.g., 'cliente', 'serviço', 'produto'
+  category: 'operacional' | 'extraordinaria' | 'investimento' | 'outros'; // New: Category for profit
   distributions: ProfitDistribution[]; // How much each partner receives
 };
