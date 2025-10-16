@@ -20,7 +20,7 @@ import { SupabaseProvider, useSupabase } from "@/context/SupabaseContext"; // Im
 
 // A wrapper component to handle loading and redirection based on auth state
 const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isLoading, session } = useSupabase();
+  const { isLoading } = useSupabase(); // 'session' removido daqui
 
   if (isLoading) {
     return (
