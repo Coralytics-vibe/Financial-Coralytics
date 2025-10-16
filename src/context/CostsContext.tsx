@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useCallback } from "react"; // Removed useState
+import React, { createContext, useContext, useCallback } from "react";
 import { Cost, CostPayment, Partner } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { usePartners } from "./PartnersContext";
@@ -17,6 +17,16 @@ interface CostsContextType {
     isRecurrent: boolean
   ) => void;
   markCostPaymentAsPaid: (costId: string, partnerId: string) => void;
+  editCost: (
+    id: string,
+    category: Cost['category'],
+    description: string | undefined,
+    value: number,
+    date: Date,
+    payerId: string,
+    isRecurrent: boolean
+  ) => void;
+  deleteCost: (costId: string) => void;
 }
 
 const CostsContext = createContext<CostsContextType | undefined>(undefined);
@@ -109,8 +119,83 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     [partners, updatePartnerBalance, setCosts]
   );
 
+  const editCost = useCallback(
+    (
+      id: string,
+      category: Cost['category'],
+      description: string | undefined,
+      value: number,
+      date: Date,
+      payerId: string,
+      isRecurrent: boolean
+    ) => {
+      setCosts((prevCosts) => {
+        const oldCost = prevCosts.find((c) => c.id === id);
+        if (!oldCost) return prevCosts;
+
+        // Revert old financial impact
+        updatePartnerBalance(oldCost.payerId, -oldCost.value); // Payer's balance decreases by old total value
+        oldCost.payments.forEach((payment) => {
+          if (payment.paid) {
+            updatePartnerBalance(payment.partnerId, payment.amount); // Partner gets money back
+            updatePartnerBalance(oldCost.payerId, payment.amount); // Payer "returns" reimbursement
+          }
+        });
+
+        // Calculate new payments based on new value and current partners
+        const costPerPartner = value / partners.length;
+        const newPayments: CostPayment[] = partners.map((partner: Partner) => ({
+          partnerId: partner.id,
+          amount: costPerPartner,
+          paid: false, // Reset paid status for simplicity on edit
+        }));
+
+        const updatedCost: Cost = {
+          id,
+          category,
+          description,
+          value,
+          date,
+          payerId,
+          isRecurrent,
+          payments: newPayments,
+        };
+
+        // Apply new financial impact
+        updatePartnerBalance(payerId, value); // New payer's balance increases by new total value
+
+        showSuccess("Custo atualizado com sucesso!");
+        return prevCosts.map((c) => (c.id === id ? updatedCost : c));
+      });
+    },
+    [partners, updatePartnerBalance, setCosts]
+  );
+
+  const deleteCost = useCallback(
+    (costId: string) => {
+      setCosts((prevCosts) => {
+        const costToDelete = prevCosts.find((c) => c.id === costId);
+        if (!costToDelete) return prevCosts;
+
+        // Check if any payments are marked as paid
+        const hasPaidPayments = costToDelete.payments.some(p => p.paid);
+        if (hasPaidPayments) {
+          showError("Não é possível excluir um custo com pagamentos já realizados. Desfaça os pagamentos primeiro.");
+          return prevCosts;
+        }
+
+        // Revert financial impact
+        updatePartnerBalance(costToDelete.payerId, -costToDelete.value); // Payer's balance decreases by total value
+
+        showSuccess("Custo excluído com sucesso!");
+        return prevCosts.filter((c) => c.id !== costId);
+      });
+    },
+    [updatePartnerBalance, setCosts]
+  );
+
   return (
-    <CostsContext.Provider value={{ costs, addCost, markCostPaymentAsPaid }}>
+    <CostsContext.Provider value={{ costs, addCost, markCostPaymentAsPaid, editCost, deleteCost }}>
       {children}
     </CostsContext.Provider>
   );

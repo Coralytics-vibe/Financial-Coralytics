@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, CheckCircle2, CircleDashed } from "lucide-react";
+import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal } from "lucide-react";
 
 import {
   Card,
@@ -29,11 +30,37 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
-import { useCosts } from "@/context/CostsContext"; // Import useCosts hook
-import { Partner } from "@/types"; // Import Partner type
+import { useCosts } from "@/context/CostsContext";
+import { Partner, Cost } from "@/types";
 
 const costSchema = z.object({
   category: z.enum(['site', 'provedor', 'banco_de_dados', 'outros'], {
@@ -53,9 +80,13 @@ const costSchema = z.object({
 
 const Costs = () => {
   const { partners } = usePartners();
-  const { costs, addCost, markCostPaymentAsPaid } = useCosts(); // Use the hook
+  const { costs, addCost, markCostPaymentAsPaid, editCost, deleteCost } = useCosts();
 
-  const form = useForm<z.infer<typeof costSchema>>({
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCost, setSelectedCost] = useState<Cost | null>(null);
+
+  const addForm = useForm<z.infer<typeof costSchema>>({
     resolver: zodResolver(costSchema),
     defaultValues: {
       category: 'outros',
@@ -67,7 +98,19 @@ const Costs = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof costSchema>) => {
+  const editForm = useForm<z.infer<typeof costSchema>>({
+    resolver: zodResolver(costSchema),
+    defaultValues: {
+      category: 'outros',
+      description: "",
+      value: 0,
+      date: new Date(),
+      payerId: "",
+      isRecurrent: false,
+    },
+  });
+
+  const onAddSubmit = (values: z.infer<typeof costSchema>) => {
     addCost(
       values.category,
       values.description,
@@ -76,7 +119,7 @@ const Costs = () => {
       values.payerId,
       values.isRecurrent
     );
-    form.reset({
+    addForm.reset({
       category: 'outros',
       description: "",
       value: 0,
@@ -84,6 +127,48 @@ const Costs = () => {
       payerId: "",
       isRecurrent: false,
     });
+  };
+
+  const onEditSubmit = (values: z.infer<typeof costSchema>) => {
+    if (selectedCost) {
+      editCost(
+        selectedCost.id,
+        values.category,
+        values.description,
+        values.value,
+        values.date,
+        values.payerId,
+        values.isRecurrent
+      );
+      setIsEditDialogOpen(false);
+      setSelectedCost(null);
+    }
+  };
+
+  const handleDeleteCost = () => {
+    if (selectedCost) {
+      deleteCost(selectedCost.id);
+      setIsDeleteDialogOpen(false);
+      setSelectedCost(null);
+    }
+  };
+
+  const openEditDialog = (cost: Cost) => {
+    setSelectedCost(cost);
+    editForm.reset({
+      category: cost.category,
+      description: cost.description,
+      value: cost.value,
+      date: cost.date,
+      payerId: cost.payerId,
+      isRecurrent: cost.isRecurrent,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (cost: Cost) => {
+    setSelectedCost(cost);
+    setIsDeleteDialogOpen(true);
   };
 
   return (
@@ -98,10 +183,10 @@ const Costs = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...addForm}>
+            <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={addForm.control}
                 name="category"
                 render={({ field }) => (
                   <FormItem>
@@ -124,7 +209,7 @@ const Costs = () => {
                 )}
               />
               <FormField
-                control={form.control}
+                control={addForm.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
@@ -137,7 +222,7 @@ const Costs = () => {
                 )}
               />
               <FormField
-                control={form.control}
+                control={addForm.control}
                 name="value"
                 render={({ field }) => (
                   <FormItem>
@@ -150,7 +235,7 @@ const Costs = () => {
                 )}
               />
               <FormField
-                control={form.control}
+                control={addForm.control}
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
@@ -188,7 +273,7 @@ const Costs = () => {
                 )}
               />
               <FormField
-                control={form.control}
+                control={addForm.control}
                 name="payerId"
                 render={({ field }) => (
                   <FormItem>
@@ -212,7 +297,7 @@ const Costs = () => {
                 )}
               />
               <FormField
-                control={form.control}
+                control={addForm.control}
                 name="isRecurrent"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -259,6 +344,7 @@ const Costs = () => {
                     <TableHead>Pagador</TableHead>
                     <TableHead>Recorrente</TableHead>
                     <TableHead className="text-center">Pagamentos</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -297,6 +383,26 @@ const Costs = () => {
                           })}
                         </div>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Abrir menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => openEditDialog(cost)}>
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openDeleteDialog(cost)} className="text-destructive">
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -305,6 +411,183 @@ const Costs = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Cost Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Custo</DialogTitle>
+            <DialogDescription>
+              Faça alterações nos detalhes do custo aqui. Clique em salvar quando terminar.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="grid gap-4 py-4">
+              <FormField
+                control={editForm.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="site">Site</SelectItem>
+                        <SelectItem value="provedor">Provedor</SelectItem>
+                        <SelectItem value="banco_de_dados">Banco de Dados</SelectItem>
+                        <SelectItem value="outros">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Breve descrição do custo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="value"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor (R$)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Selecione uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="payerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pagador</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Quem pagou este custo?" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {partners.map((partner: Partner) => (
+                          <SelectItem key={partner.id} value={partner.id}>
+                            {partner.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="isRecurrent"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Custo Recorrente</FormLabel>
+                      <FormDescription>
+                        Indica se este é um custo que se repete regularmente.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit">Salvar alterações</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Cost Alert Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o custo{" "}
+              <span className="font-semibold">{selectedCost?.description || selectedCost?.category}</span> e reverterá seu impacto financeiro.
+              <br />
+              <span className="font-bold text-red-500">
+                Atenção: Custos com pagamentos já realizados não podem ser excluídos diretamente. Desfaça os pagamentos primeiro.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCost}
+              disabled={selectedCost?.payments.some(p => p.paid)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
