@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react"; // Removed React
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,7 +39,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  // Removed DialogTrigger
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -50,19 +49,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  // Removed AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 import { usePartners } from "@/context/PartnersContext";
 import { Partner } from "@/types";
 
 const partnerSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  email: z.string().email("E-mail inválido"),
+  name: z.string().min(1, "Nome é obrigatório."),
+  email: z.string().email("E-mail inválido."),
+  phone: z.string().optional(),
+  document: z.string().optional(),
+  participation: z.preprocess(
+    (val) => Number(String(val).replace(',', '.')),
+    z.number().min(0.01, "A participação deve ser maior que zero.").max(100, "A participação não pode exceder 100%.")
+  ),
+}).refine((_data) => { // Renamed 'data' to '_data' to fix TS6133
+  // Custom validation for total participation will be handled in context or onSubmit
+  return true;
+}, {
+  message: "A soma das participações não pode exceder 100%.",
+  path: ["participation"], // This path might need adjustment if applied globally
 });
 
+
 const Partners = () => {
-  const { partners, addPartner, editPartner, deletePartner } = usePartners();
+  const { partners, addPartner, editPartner, deletePartner, getTotalParticipation } = usePartners();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
@@ -72,6 +84,9 @@ const Partners = () => {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
+      document: "",
+      participation: 0,
     },
   });
 
@@ -80,17 +95,34 @@ const Partners = () => {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
+      document: "",
+      participation: 0,
     },
   });
 
   const onAddSubmit = (values: z.infer<typeof partnerSchema>) => {
-    addPartner(values.name, values.email);
+    const currentTotalParticipation = getTotalParticipation();
+    if (currentTotalParticipation + values.participation > 100) {
+      addForm.setError("participation", { message: `A soma das participações não pode exceder 100%. Total atual: ${currentTotalParticipation.toFixed(2)}%` });
+      return;
+    }
+    addPartner(values.name, values.email, values.phone, values.document, values.participation);
     addForm.reset();
   };
 
   const onEditSubmit = (values: z.infer<typeof partnerSchema>) => {
     if (selectedPartner) {
-      editPartner(selectedPartner.id, values.name, values.email);
+      const otherPartnersParticipation = partners
+        .filter(p => p.id !== selectedPartner.id)
+        .reduce((sum, p) => sum + p.participation, 0);
+      
+      if (otherPartnersParticipation + values.participation > 100) {
+        editForm.setError("participation", { message: `A soma das participações não pode exceder 100%. Total dos outros sócios: ${otherPartnersParticipation.toFixed(2)}%` });
+        return;
+      }
+
+      editPartner(selectedPartner.id, values.name, values.email, values.phone, values.document, values.participation);
       setIsEditDialogOpen(false);
       setSelectedPartner(null);
     }
@@ -106,7 +138,13 @@ const Partners = () => {
 
   const openEditDialog = (partner: Partner) => {
     setSelectedPartner(partner);
-    editForm.reset({ name: partner.name, email: partner.email });
+    editForm.reset({ 
+      name: partner.name, 
+      email: partner.email, 
+      phone: partner.phone || "", 
+      document: partner.document || "", 
+      participation: partner.participation 
+    });
     setIsEditDialogOpen(true);
   };
 
@@ -114,6 +152,9 @@ const Partners = () => {
     setSelectedPartner(partner);
     setIsDeleteDialogOpen(true);
   };
+
+  const totalParticipation = getTotalParticipation();
+  const remainingParticipation = 100 - totalParticipation;
 
   return (
     <div className="space-y-6">
@@ -136,7 +177,7 @@ const Partners = () => {
                   <FormItem>
                     <FormLabel>Nome</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome completo" {...field} />
+                      <Input placeholder="Nome completo do sócio" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,6 +191,45 @@ const Partners = () => {
                     <FormLabel>E-mail</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="email@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(XX) XXXXX-XXXX" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addForm.control}
+                name="document"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF/CNPJ (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="XXX.XXX.XXX-XX ou XX.XXX.XXX/XXXX-XX" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addForm.control}
+                name="participation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Participação (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -169,50 +249,72 @@ const Partners = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              Total de Participação Distribuída:{" "}
+              <Badge variant={totalParticipation > 100 ? "destructive" : "secondary"}>
+                {totalParticipation.toFixed(2)}%
+              </Badge>
+            </p>
+            {remainingParticipation !== 0 && (
+              <p className="text-sm text-muted-foreground">
+                {remainingParticipation > 0 ? "Falta distribuir" : "Excedente"}:{" "}
+                <Badge variant={remainingParticipation < 0 ? "destructive" : "outline"}>
+                  {remainingParticipation.toFixed(2)}%
+                </Badge>
+              </p>
+            )}
+          </div>
           {partners.length === 0 ? (
             <p className="text-muted-foreground">Nenhum sócio cadastrado ainda.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead className="text-right">Participação</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {partners.map((partner: Partner) => (
-                  <TableRow key={partner.id}>
-                    <TableCell className="font-medium">{partner.name}</TableCell>
-                    <TableCell>{partner.email}</TableCell>
-                    <TableCell className="text-right">{partner.participation.toFixed(2)}%</TableCell>
-                    <TableCell className="text-right">R$ {partner.balance.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Abrir menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => openEditDialog(partner)}>
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => openDeleteDialog(partner)} className="text-destructive">
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>E-mail</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Documento</TableHead>
+                    <TableHead className="text-right">Participação</TableHead>
+                    <TableHead className="text-right">Saldo</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {partners.map((partner: Partner) => (
+                    <TableRow key={partner.id}>
+                      <TableCell className="font-medium">{partner.name}</TableCell>
+                      <TableCell>{partner.email}</TableCell>
+                      <TableCell>{partner.phone || '-'}</TableCell>
+                      <TableCell>{partner.document || '-'}</TableCell>
+                      <TableCell className="text-right">{partner.participation.toFixed(2)}%</TableCell>
+                      <TableCell className="text-right">R$ {partner.balance.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Abrir menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => openEditDialog(partner)}>
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openDeleteDialog(partner)} className="text-destructive">
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -249,6 +351,45 @@ const Partners = () => {
                     <FormLabel>E-mail</FormLabel>
                     <FormControl>
                       <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="document"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF/CNPJ (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="participation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Participação (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

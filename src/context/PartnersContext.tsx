@@ -1,16 +1,17 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useCallback } from "react"; // Removed useEffect
 import { Partner } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
 interface PartnersContextType {
   partners: Partner[];
-  addPartner: (name: string, email: string) => void;
+  addPartner: (name: string, email: string, phone: string | undefined, document: string | undefined, participation: number) => void;
   updatePartnerBalance: (partnerId: string, amount: number) => void;
-  editPartner: (id: string, name: string, email: string) => void; // New: Edit partner
-  deletePartner: (id: string) => void; // New: Delete partner
+  editPartner: (id: string, name: string, email: string, phone: string | undefined, document: string | undefined, participation: number) => void;
+  deletePartner: (id: string) => void;
+  getTotalParticipation: () => number; // New: Get total participation
 }
 
 const PartnersContext = createContext<PartnersContextType | undefined>(undefined);
@@ -18,33 +19,34 @@ const PartnersContext = createContext<PartnersContextType | undefined>(undefined
 export const PartnersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [partners, setPartners] = useLocalStorage<Partner[]>("financial_app_partners", []);
 
-  // Recalculate participation whenever partners change
-  const updateParticipation = useCallback((currentPartners: Partner[]) => {
-    if (currentPartners.length > 0) {
-      const newParticipation = 100 / currentPartners.length;
-      return currentPartners.map((p) => ({ ...p, participation: newParticipation }));
+  // Removed updateParticipation useEffect as participation is now user-defined
+
+  const getTotalParticipation = useCallback(() => {
+    return partners.reduce((sum, p) => sum + p.participation, 0);
+  }, [partners]);
+
+  const addPartner = (name: string, email: string, phone: string | undefined, document: string | undefined, participation: number) => {
+    if (partners.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+      showError("Já existe um sócio com este nome.");
+      return;
     }
-    return currentPartners;
-  }, []);
+    if (partners.some(p => p.email.toLowerCase() === email.toLowerCase())) {
+      showError("Já existe um sócio com este e-mail.");
+      return;
+    }
 
-  useEffect(() => {
-    // This effect ensures participation is always up-to-date when partners array changes
-    // It also handles initial load if partners were loaded from localStorage
-    setPartners((prevPartners) => updateParticipation(prevPartners));
-  }, [partners.length, updateParticipation, setPartners]);
-
-  const addPartner = (name: string, email: string) => {
     const newPartner: Partner = {
       id: crypto.randomUUID(),
       name,
       email,
-      participation: 0, // Will be recalculated by useEffect
+      phone,
+      document,
+      participation,
       balance: 0,
     };
     setPartners((prev) => {
-      const updatedPartners = [...prev, newPartner];
       showSuccess("Sócio adicionado com sucesso!");
-      return updateParticipation(updatedPartners);
+      return [...prev, newPartner];
     });
   };
 
@@ -56,13 +58,22 @@ export const PartnersProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
-  const editPartner = (id: string, name: string, email: string) => {
+  const editPartner = (id: string, name: string, email: string, phone: string | undefined, document: string | undefined, participation: number) => {
+    if (partners.some(p => p.id !== id && p.name.toLowerCase() === name.toLowerCase())) {
+      showError("Já existe outro sócio com este nome.");
+      return;
+    }
+    if (partners.some(p => p.id !== id && p.email.toLowerCase() === email.toLowerCase())) {
+      showError("Já existe outro sócio com este e-mail.");
+      return;
+    }
+
     setPartners((prevPartners) => {
       const updatedPartners = prevPartners.map((p) =>
-        p.id === id ? { ...p, name, email } : p
+        p.id === id ? { ...p, name, email, phone, document, participation } : p
       );
       showSuccess("Sócio atualizado com sucesso!");
-      return updateParticipation(updatedPartners);
+      return updatedPartners;
     });
   };
 
@@ -75,12 +86,12 @@ export const PartnersProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       const updatedPartners = prevPartners.filter((p) => p.id !== id);
       showSuccess("Sócio excluído com sucesso!");
-      return updateParticipation(updatedPartners);
+      return updatedPartners;
     });
   };
 
   return (
-    <PartnersContext.Provider value={{ partners, addPartner, updatePartnerBalance, editPartner, deletePartner }}>
+    <PartnersContext.Provider value={{ partners, addPartner, updatePartnerBalance, editPartner, deletePartner, getTotalParticipation }}>
       {children}
     </PartnersContext.Provider>
   );

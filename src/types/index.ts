@@ -2,6 +2,8 @@ export type Partner = {
   id: string;
   name: string;
   email: string;
+  phone?: string; // New: Optional phone number
+  document?: string; // New: Optional CPF/CNPJ
   participation: number; // Percentage, e.g., 25 for 25%
   balance: number; // Individual balance, positive if owed to them, negative if they owe
 };
