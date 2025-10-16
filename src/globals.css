@@ -34,21 +34,14 @@
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 98%; /* Light background for sidebar */
+    --sidebar-foreground: 240 5.3% 26.1%; /* Darker text for sidebar */
+    --sidebar-primary: 240 5.9% 10%; /* Primary color for sidebar elements */
+    --sidebar-primary-foreground: 0 0% 98%; /* Light text on primary sidebar elements */
+    --sidebar-accent: 240 4.8% 95.9%; /* Accent background for active links */
+    --sidebar-accent-foreground: 240 5.9% 10%; /* Accent text for active links */
+    --sidebar-border: 220 13% 91%; /* Border color for sidebar */
+    --sidebar-ring: 217.2 91.2% 59.8%; /* Ring color for sidebar focus */
   }
 
   .dark {
@@ -79,14 +72,15 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    --sidebar-background: 240 5.9% 10%; /* Dark background for sidebar */
+    --sidebar-foreground: 240 4.8% 95.9%; /* Light text for sidebar */
+    --sidebar-primary: 224.3 76.3% 48%; /* Primary color for sidebar elements */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on primary sidebar elements */
+    --sidebar-accent: 240 3.7% 15.9%; /* Accent background for active links */
+    --sidebar-accent-foreground: 240 4.8% 95.9%; /* Accent text for active links */
+    --sidebar-border: 240 3.7% 15.9%; /* Border color for sidebar */
+    --sidebar-ring: 217.2 91.2% 59.8%; /* Ring color for sidebar focus */
   }
 }
 
