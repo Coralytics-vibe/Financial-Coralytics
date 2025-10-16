@@ -1,9 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useCallback } from "react"; // Removed useState
 import { Profit, ProfitDistribution, Partner } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
-import { usePartners } from "./PartnersContext"; // Import usePartners to update partner balances
+import { usePartners } from "./PartnersContext";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 interface ProfitsContextType {
   profits: Profit[];
@@ -13,7 +14,7 @@ interface ProfitsContextType {
 const ProfitsContext = createContext<ProfitsContextType | undefined>(undefined);
 
 export const ProfitsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [profits, setProfits] = useState<Profit[]>([]);
+  const [profits, setProfits] = useLocalStorage<Profit[]>("financial_app_profits", []);
   const { partners, updatePartnerBalance } = usePartners();
 
   const addProfit = useCallback(
@@ -48,7 +49,7 @@ export const ProfitsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       showSuccess("Lucro registrado e distribuído com sucesso!");
     },
-    [partners, updatePartnerBalance]
+    [partners, updatePartnerBalance, setProfits]
   );
 
   return (

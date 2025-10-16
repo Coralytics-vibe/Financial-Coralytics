@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useCallback } from "react"; // Removed useState
 import { Partner } from "@/types";
-import { showSuccess } from "@/utils/toast"; // Removed showError as it's not used here
+import { showSuccess } from "@/utils/toast";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 interface PartnersContextType {
   partners: Partner[];
@@ -13,7 +14,7 @@ interface PartnersContextType {
 const PartnersContext = createContext<PartnersContextType | undefined>(undefined);
 
 export const PartnersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partners, setPartners] = useLocalStorage<Partner[]>("financial_app_partners", []);
 
   // Recalculate participation whenever partners change
   const updateParticipation = useCallback((currentPartners: Partner[]) => {
@@ -25,8 +26,10 @@ export const PartnersProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   useEffect(() => {
+    // This effect ensures participation is always up-to-date when partners array changes
+    // It also handles initial load if partners were loaded from localStorage
     setPartners((prevPartners) => updateParticipation(prevPartners));
-  }, [partners.length, updateParticipation]);
+  }, [partners.length, updateParticipation, setPartners]);
 
   const addPartner = (name: string, email: string) => {
     const newPartner: Partner = {

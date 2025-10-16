@@ -1,9 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useCallback } from "react"; // Removed useState
 import { Cost, CostPayment, Partner } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
-import { usePartners } from "./PartnersContext"; // Import usePartners to update partner balances
+import { usePartners } from "./PartnersContext";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 interface CostsContextType {
   costs: Cost[];
@@ -21,7 +22,7 @@ interface CostsContextType {
 const CostsContext = createContext<CostsContextType | undefined>(undefined);
 
 export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [costs, setCosts] = useState<Cost[]>([]);
+  const [costs, setCosts] = useLocalStorage<Cost[]>("financial_app_costs", []);
   const { partners, updatePartnerBalance } = usePartners();
 
   const addCost = useCallback(
@@ -63,13 +64,13 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       showSuccess("Custo adicionado com sucesso!");
     },
-    [partners, updatePartnerBalance]
+    [partners, updatePartnerBalance, setCosts]
   );
 
   const markCostPaymentAsPaid = useCallback(
     (costId: string, partnerId: string) => {
-      setCosts((prevCosts) =>
-        prevCosts.map((cost) =>
+      setCosts((prevCosts) => {
+        const updatedCosts = prevCosts.map((cost) =>
           cost.id === costId
             ? {
                 ...cost,
@@ -80,31 +81,32 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 ),
               }
             : cost
-        )
-      );
+        );
 
-      const cost = costs.find((c) => c.id === costId);
-      if (cost) {
-        const payment = cost.payments.find((p: CostPayment) => p.partnerId === partnerId);
-        if (payment) {
-          const amount = payment.amount;
-          const isCurrentlyPaid = payment.paid; // This is the state *before* the toggle
+        const cost = updatedCosts.find((c) => c.id === costId);
+        if (cost) {
+          const payment = cost.payments.find((p: CostPayment) => p.partnerId === partnerId);
+          if (payment) {
+            const amount = payment.amount;
+            const isCurrentlyPaid = !payment.paid; // This is the state *before* the toggle, so it's the opposite of the new state
 
-          if (!isCurrentlyPaid) {
-            // If it was unpaid and is now marked as paid
-            updatePartnerBalance(partnerId, -amount); // Partner's balance decreases (they paid their share)
-            updatePartnerBalance(cost.payerId, -amount); // Payer's balance decreases (they received reimbursement)
-            showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} pagou sua parte.`);
-          } else {
-            // If it was paid and is now marked as unpaid
-            updatePartnerBalance(partnerId, amount); // Partner's balance increases (they are owed again)
-            updatePartnerBalance(cost.payerId, amount); // Payer's balance increases (they are owed again)
-            showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} teve o pagamento revertido.`);
+            if (isCurrentlyPaid) {
+              // If it was unpaid and is now marked as paid
+              updatePartnerBalance(partnerId, -amount); // Partner's balance decreases (they paid their share)
+              updatePartnerBalance(cost.payerId, -amount); // Payer's balance decreases (they received reimbursement)
+              showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} pagou sua parte.`);
+            } else {
+              // If it was paid and is now marked as unpaid
+              updatePartnerBalance(partnerId, amount); // Partner's balance increases (they are owed again)
+              updatePartnerBalance(cost.payerId, amount); // Payer's balance increases (they are owed again)
+              showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} teve o pagamento revertido.`);
+            }
           }
         }
-      }
+        return updatedCosts;
+      });
     },
-    [costs, partners, updatePartnerBalance]
+    [partners, updatePartnerBalance, setCosts]
   );
 
   return (
