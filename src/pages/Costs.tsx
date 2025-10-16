@@ -171,6 +171,8 @@ const Costs = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const totalCosts = costs.reduce((sum, cost) => sum + cost.value, 0);
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Gestão de Custos</h1>
@@ -316,7 +318,12 @@ const Costs = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit">Registrar Custo</Button>
+              <div className="flex gap-2">
+                <Button type="submit">Registrar Custo</Button>
+                <Button type="button" variant="outline" onClick={() => addForm.reset({ category: 'outros', description: "", value: 0, date: new Date(), payerId: "", isRecurrent: false })}>
+                  Limpar
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>
@@ -330,6 +337,9 @@ const Costs = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 text-right text-sm text-muted-foreground">
+            Total de Custos: <Badge variant="secondary">R$ {totalCosts.toFixed(2)}</Badge>
+          </div>
           {costs.length === 0 ? (
             <p className="text-muted-foreground">Nenhum custo registrado ainda.</p>
           ) : (
