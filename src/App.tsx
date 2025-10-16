@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Costs from "@/pages/Costs";
 import Profits from "@/pages/Profits";
 import Partners from "@/pages/Partners";
+import PartnerDetails from "@/pages/PartnerDetails"; // Import the new PartnerDetails page
 
 import { PartnersProvider } from "@/context/PartnersContext";
 import { CostsProvider } from "@/context/CostsContext";
@@ -29,6 +30,7 @@ function App() {
                   <Route path="costs" element={<Costs />} />
                   <Route path="profits" element={<Profits />} />
                   <Route path="partners" element={<Partners />} />
+                  <Route path="partners/:id" element={<PartnerDetails />} /> {/* New route for PartnerDetails */}
                 </Route>
               </Routes>
             </Router>

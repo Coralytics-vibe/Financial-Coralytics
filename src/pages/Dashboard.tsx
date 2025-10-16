@@ -151,7 +151,11 @@ const Dashboard = () => {
               <TableBody>
                 {partners.map((partner) => (
                   <TableRow key={partner.id}>
-                    <TableCell className="font-medium">{partner.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link to={`/partners/${partner.id}`} className="text-blue-600 hover:underline">
+                        {partner.name}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-right">{partner.participation.toFixed(2)}%</TableCell> {/* Display Participation */}
                     <TableCell className="text-right">
                       <Badge variant={partner.balance >= 0 ? "success" : "destructive"}>
