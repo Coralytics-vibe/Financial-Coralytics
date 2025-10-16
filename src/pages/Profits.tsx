@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,9 +29,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 
 import { cn } from "@/lib/utils";
-import { showSuccess, showError } from "@/utils/toast";
 import { usePartners } from "@/context/PartnersContext";
-import { Profit, ProfitDistribution, Partner } from "@/types";
+import { useProfits } from "@/context/ProfitsContext"; // Import useProfits hook
+import { Partner, ProfitDistribution } from "@/types";
 
 const profitSchema = z.object({
   date: z.date({
@@ -46,8 +45,8 @@ const profitSchema = z.object({
 });
 
 const Profits = () => {
-  const { partners, updatePartnerBalance } = usePartners();
-  const [profits, setProfits] = useState<Profit[]>([]);
+  const { partners } = usePartners();
+  const { profits, addProfit } = useProfits(); // Use the hook
 
   const form = useForm<z.infer<typeof profitSchema>>({
     resolver: zodResolver(profitSchema),
@@ -59,33 +58,7 @@ const Profits = () => {
   });
 
   const onSubmit = (values: z.infer<typeof profitSchema>) => {
-    if (partners.length === 0) {
-      showError("Adicione sócios antes de registrar lucros.");
-      return;
-    }
-
-    const distributions: ProfitDistribution[] = partners.map((partner: Partner) => {
-      const amount = (values.value * partner.participation) / 100;
-      return {
-        partnerId: partner.id,
-        amount: amount,
-      };
-    });
-
-    const newProfit: Profit = {
-      id: crypto.randomUUID(),
-      ...values,
-      distributions,
-    };
-
-    setProfits((prev) => [...prev, newProfit]);
-
-    // Update balances for each partner
-    distributions.forEach((dist) => {
-      updatePartnerBalance(dist.partnerId, dist.amount);
-    });
-
-    showSuccess("Lucro registrado e distribuído com sucesso!");
+    addProfit(values.date, values.value, values.source);
     form.reset({
       date: new Date(),
       value: 0,

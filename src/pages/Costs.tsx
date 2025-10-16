@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,9 +31,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
 import { cn } from "@/lib/utils";
-import { showSuccess, showError } from "@/utils/toast";
 import { usePartners } from "@/context/PartnersContext";
-import { Cost, CostPayment, Partner } from "@/types"; // Import Partner type
+import { useCosts } from "@/context/CostsContext"; // Import useCosts hook
+import { Partner } from "@/types"; // Import Partner type
 
 const costSchema = z.object({
   category: z.enum(['site', 'provedor', 'banco_de_dados', 'outros'], {
@@ -53,8 +52,8 @@ const costSchema = z.object({
 });
 
 const Costs = () => {
-  const { partners, updatePartnerBalance } = usePartners();
-  const [costs, setCosts] = useState<Cost[]>([]);
+  const { partners } = usePartners();
+  const { costs, addCost, markCostPaymentAsPaid } = useCosts(); // Use the hook
 
   const form = useForm<z.infer<typeof costSchema>>({
     resolver: zodResolver(costSchema),
@@ -69,30 +68,14 @@ const Costs = () => {
   });
 
   const onSubmit = (values: z.infer<typeof costSchema>) => {
-    if (partners.length === 0) {
-      showError("Adicione sócios antes de registrar custos.");
-      return;
-    }
-
-    const costPerPartner = values.value / partners.length;
-    const payments: CostPayment[] = partners.map((partner: Partner) => ({
-      partnerId: partner.id,
-      amount: costPerPartner,
-      paid: false,
-    }));
-
-    const newCost: Cost = {
-      id: crypto.randomUUID(),
-      ...values,
-      payments,
-    };
-
-    setCosts((prev) => [...prev, newCost]);
-    
-    // Update balances: Payer's balance increases by the total value
-    updatePartnerBalance(values.payerId, values.value);
-
-    showSuccess("Custo adicionado com sucesso!");
+    addCost(
+      values.category,
+      values.description,
+      values.value,
+      values.date,
+      values.payerId,
+      values.isRecurrent
+    );
     form.reset({
       category: 'outros',
       description: "",
@@ -101,44 +84,6 @@ const Costs = () => {
       payerId: "",
       isRecurrent: false,
     });
-  };
-
-  const handleMarkAsPaid = (costId: string, partnerId: string) => {
-    setCosts((prevCosts) =>
-      prevCosts.map((cost) =>
-        cost.id === costId
-          ? {
-              ...cost,
-              payments: cost.payments.map((payment: CostPayment) =>
-                payment.partnerId === partnerId
-                  ? { ...payment, paid: !payment.paid }
-                  : payment
-              ),
-            }
-          : cost
-      )
-    );
-
-    // Adjust balances: If marked as paid, the partner's balance decreases by the amount they owed for this cost.
-    // The payer's balance also decreases by the same amount (as they are "reimbursed").
-    const cost = costs.find(c => c.id === costId);
-    if (cost) {
-      const payment = cost.payments.find((p: CostPayment) => p.partnerId === partnerId);
-      if (payment) {
-        const amount = payment.amount;
-        const isCurrentlyPaid = payment.paid; // This is the state *before* the toggle
-
-        if (!isCurrentlyPaid) { // If it was unpaid and is now marked as paid
-          updatePartnerBalance(partnerId, -amount); // Partner's balance decreases (they paid their share)
-          updatePartnerBalance(cost.payerId, -amount); // Payer's balance decreases (they received reimbursement)
-          showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} pagou sua parte.`);
-        } else { // If it was paid and is now marked as unpaid
-          updatePartnerBalance(partnerId, amount); // Partner's balance increases (they are owed again)
-          updatePartnerBalance(cost.payerId, amount); // Payer's balance increases (they are owed again)
-          showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} teve o pagamento revertido.`);
-        }
-      }
-    }
   };
 
   return (
@@ -168,11 +113,6 @@ const Costs = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {partners.map((partner: Partner) => (
-                          <SelectItem key={partner.id} value={partner.id}>
-                            {partner.name}
-                          </SelectItem>
-                        ))}
                         <SelectItem value="site">Site</SelectItem>
                         <SelectItem value="provedor">Provedor</SelectItem>
                         <SelectItem value="banco_de_dados">Banco de Dados</SelectItem>
@@ -340,14 +280,14 @@ const Costs = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-2 justify-center">
-                          {cost.payments.map((payment: CostPayment) => {
+                          {cost.payments.map((payment) => {
                             const partner = partners.find((p: Partner) => p.id === payment.partnerId);
                             return (
                               <Button
                                 key={payment.partnerId}
                                 variant={payment.paid ? "success" : "destructive"}
                                 size="sm"
-                                onClick={() => handleMarkAsPaid(cost.id, payment.partnerId)}
+                                onClick={() => markCostPaymentAsPaid(cost.id, payment.partnerId)}
                                 className="flex items-center gap-1"
                               >
                                 {payment.paid ? <CheckCircle2 className="h-4 w-4" /> : <CircleDashed className="h-4 w-4" />}
