@@ -1,47 +1,42 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+"use client";
+
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./components/Layout";
-import Index from "./pages/Index";
-import Partners from "./pages/Partners";
-import Costs from "./pages/Costs";
-import Profits from "./pages/Profits";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import { PartnersProvider } from "./context/PartnersContext";
-import { CostsProvider } from "./context/CostsContext";     // Import CostsProvider
-import { ProfitsProvider } from "./context/ProfitsContext"; // Import ProfitsProvider
+import { Toaster } from "react-hot-toast"; // This package will be installed
 
-const queryClient = new QueryClient();
+import Layout from "@/components/Layout";
+import Dashboard from "@/pages/Dashboard";
+import Costs from "@/pages/Costs";
+import Profits from "@/pages/Profits";
+import Partners from "@/pages/Partners";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+import { PartnersProvider } from "@/context/PartnersContext";
+import { CostsProvider } from "@/context/CostsContext";
+import { ProfitsProvider } from "@/context/ProfitsContext";
+
+function App() {
+  return (
     <TooltipProvider>
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <PartnersProvider>
-          <CostsProvider>     {/* Wrap with CostsProvider */}
-            <ProfitsProvider> {/* Wrap with ProfitsProvider */}
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/partners" element={<Partners />} />
-                  <Route path="/costs" element={<Costs />} />
-                  <Route path="/profits" element={<Profits />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            </ProfitsProvider>
-          </CostsProvider>
-        </PartnersProvider>
-      </BrowserRouter>
+      <PartnersProvider>
+        <CostsProvider>
+          <ProfitsProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="costs" element={<Costs />} />
+                  <Route path="profits" element={<Profits />} />
+                  <Route path="partners" element={<Partners />} />
+                </Route>
+              </Routes>
+            </Router>
+          </ProfitsProvider>
+        </CostsProvider>
+      </PartnersProvider>
     </TooltipProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;
