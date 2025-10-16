@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -23,20 +21,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { showSuccess, showError } from "@/utils/toast";
+import { usePartners } from "@/context/PartnersContext"; // Import usePartners hook
+import { Partner } from "@/types"; // Import Partner type
 
 const partnerSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("E-mail inválido"),
 });
 
-type Partner = z.infer<typeof partnerSchema> & {
-  id: string;
-  participation: number;
-};
-
 const Partners = () => {
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const { partners, addPartner } = usePartners(); // Use the hook
   const form = useForm<z.infer<typeof partnerSchema>>({
     resolver: zodResolver(partnerSchema),
     defaultValues: {
@@ -45,25 +39,9 @@ const Partners = () => {
     },
   });
 
-  useEffect(() => {
-    // Recalculate participation whenever partners change
-    if (partners.length > 0) {
-      const newParticipation = 100 / partners.length;
-      setPartners((prevPartners) =>
-        prevPartners.map((p) => ({ ...p, participation: newParticipation }))
-      );
-    }
-  }, [partners.length]);
-
   const onSubmit = (values: z.infer<typeof partnerSchema>) => {
-    const newPartner: Partner = {
-      id: crypto.randomUUID(),
-      ...values,
-      participation: 0, // Will be recalculated by useEffect
-    };
-    setPartners((prev) => [...prev, newPartner]);
+    addPartner(values.name, values.email);
     form.reset();
-    showSuccess("Sócio adicionado com sucesso!");
   };
 
   return (
@@ -129,14 +107,16 @@ const Partners = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead className="text-right">Participação</TableHead>
+                  <TableHead className="text-right">Saldo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {partners.map((partner) => (
+                {partners.map((partner: Partner) => (
                   <TableRow key={partner.id}>
                     <TableCell className="font-medium">{partner.name}</TableCell>
                     <TableCell>{partner.email}</TableCell>
                     <TableCell className="text-right">{partner.participation.toFixed(2)}%</TableCell>
+                    <TableCell className="text-right">R$ {partner.balance.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

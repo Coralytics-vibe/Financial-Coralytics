@@ -42,6 +42,9 @@
     --sidebar-accent-foreground: 240 5.9% 10%; /* Accent text for active links */
     --sidebar-border: 220 13% 91%; /* Border color for sidebar */
     --sidebar-ring: 217.2 91.2% 59.8%; /* Ring color for sidebar focus */
+
+    --success: 142.1 76.2% 36.3%; /* Green for success */
+    --success-foreground: 355.7 100% 97.3%; /* White text on success */
   }
 
   .dark {
@@ -81,6 +84,9 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%; /* Accent text for active links */
     --sidebar-border: 240 3.7% 15.9%; /* Border color for sidebar */
     --sidebar-ring: 217.2 91.2% 59.8%; /* Ring color for sidebar focus */
+
+    --success: 142.1 70.6% 45.3%; /* Green for success */
+    --success-foreground: 142.1 76.2% 36.3%; /* Darker green text on success */
   }
 }
 
@@ -91,5 +97,11 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .button-success {
+    @apply bg-success text-success-foreground hover:bg-success/90;
   }
 }
