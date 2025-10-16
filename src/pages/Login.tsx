@@ -6,6 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function Login() {
+  // Adicionando logs para depuração, acessando as variáveis de ambiente diretamente
+  console.log('Supabase client in Login.tsx:', supabase);
+  console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+  console.log('VITE_SUPABASE_ANON_KEY (first few chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 10));
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
