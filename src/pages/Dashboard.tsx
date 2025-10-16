@@ -1,9 +1,13 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { usePartners } from "@/context/PartnersContext";
 import { useCosts } from "@/context/CostsContext";
 import { useProfits } from "@/context/ProfitsContext";
-import { Link } from "react-router-dom"; // Import Link for navigation
+import { Link } from "react-router-dom";
+import { DateRange } from "react-day-picker";
+import { isWithinInterval } from "date-fns";
+
 import {
   Card,
   CardContent,
@@ -29,15 +33,40 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-} from "recharts"; // Import Recharts components
+}
+from "recharts";
+import { DateRangePicker } from "@/components/DateRangePicker";
 
 const Dashboard = () => {
   const { partners } = usePartners();
   const { costs } = useCosts();
   const { profits } = useProfits();
 
-  const totalCosts = costs.reduce((sum, cost) => sum + cost.value, 0);
-  const totalProfits = profits.reduce((sum, profit) => sum + profit.value, 0);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  // Filter costs and profits based on the selected date range
+  const filteredCosts = useMemo(() => {
+    if (!dateRange?.from) return costs;
+    return costs.filter((cost) =>
+      isWithinInterval(cost.date, {
+        start: dateRange.from!, // Fixed: Assert dateRange.from is a Date
+        end: dateRange.to || new Date(),
+      })
+    );
+  }, [costs, dateRange]);
+
+  const filteredProfits = useMemo(() => {
+    if (!dateRange?.from) return profits;
+    return profits.filter((profit) =>
+      isWithinInterval(profit.date, {
+        start: dateRange.from!, // Fixed: Assert dateRange.from is a Date
+        end: dateRange.to || new Date(),
+      })
+    );
+  }, [profits, dateRange]);
+
+  const totalCosts = filteredCosts.reduce((sum, cost) => sum + cost.value, 0);
+  const totalProfits = filteredProfits.reduce((sum, profit) => sum + profit.value, 0);
   const netBalance = totalProfits - totalCosts;
 
   const netProfitPercentage = totalCosts > 0 ? (netBalance / totalCosts) * 100 : 0;
@@ -51,8 +80,12 @@ const Dashboard = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Dashboard Financeiro</h1>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"> {/* Changed to 4 columns */}
-        <Link to="/costs"> {/* Make card clickable */}
+      <div className="flex justify-end mb-4">
+        <DateRangePicker onDateRangeChange={setDateRange} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Link to="/costs">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Custos</CardTitle>
@@ -66,7 +99,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </Link>
-        <Link to="/profits"> {/* Make card clickable */}
+        <Link to="/profits">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Lucros</CardTitle>
@@ -80,7 +113,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </Link>
-        <Card> {/* Net Balance card is not directly linked to a single page */}
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Saldo Líquido</CardTitle>
             <Badge variant={netBalance >= 0 ? "success" : "destructive"}>R$</Badge>
@@ -92,7 +125,7 @@ const Dashboard = () => {
             </p>
           </CardContent>
         </Card>
-        <Card> {/* New KPI card */}
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Lucratividade</CardTitle>
             <Badge variant={netProfitPercentage >= 0 ? "success" : "destructive"}>%</Badge>
@@ -144,7 +177,7 @@ const Dashboard = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead className="text-right">Participação</TableHead> {/* Added Participation column */}
+                  <TableHead className="text-right">Participação</TableHead>
                   <TableHead className="text-right">Saldo</TableHead>
                 </TableRow>
               </TableHeader>
@@ -156,7 +189,7 @@ const Dashboard = () => {
                         {partner.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-right">{partner.participation.toFixed(2)}%</TableCell> {/* Display Participation */}
+                    <TableCell className="text-right">{partner.participation.toFixed(2)}%</TableCell>
                     <TableCell className="text-right">
                       <Badge variant={partner.balance >= 0 ? "success" : "destructive"}>
                         R$ {partner.balance.toFixed(2)}
