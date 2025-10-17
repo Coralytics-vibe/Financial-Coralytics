@@ -16,7 +16,7 @@ export type CostPayment = {
 
 export type Cost = {
   id: string;
-  category: 'site' | 'provedor' | 'banco_de_dados' | 'outros';
+  category: 'site' | 'provedor' | 'banco_de_dados' | 'implantacao' | 'manutencao' | 'operacional' | 'atualizacao' | 'usuario' | 'transacao' | 'imposto' | 'outros';
   description?: string; // Optional description for the cost
   value: number;
   date: Date;

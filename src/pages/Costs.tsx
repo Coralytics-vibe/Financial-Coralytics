@@ -64,7 +64,7 @@ import { useCosts } from "@/context/CostsContext";
 import { Partner, Cost } from "@/types";
 
 const costSchema = z.object({
-  category: z.enum(['site', 'provedor', 'banco_de_dados', 'outros'], {
+  category: z.enum(['site', 'provedor', 'banco_de_dados', 'implantacao', 'manutencao', 'operacional', 'atualizacao', 'usuario', 'transacao', 'imposto', 'outros'], {
     required_error: "A categoria é obrigatória.",
   }),
   description: z.string().optional(),
@@ -204,6 +204,13 @@ const Costs = () => {
                         <SelectItem value="site">Site</SelectItem>
                         <SelectItem value="provedor">Provedor</SelectItem>
                         <SelectItem value="banco_de_dados">Banco de Dados</SelectItem>
+                        <SelectItem value="implantacao">Implantação</SelectItem>
+                        <SelectItem value="manutencao">Manutenção</SelectItem>
+                        <SelectItem value="operacional">Operacional</SelectItem>
+                        <SelectItem value="atualizacao">Atualização</SelectItem>
+                        <SelectItem value="usuario">Usuário</SelectItem>
+                        <SelectItem value="transacao">Transação</SelectItem>
+                        <SelectItem value="imposto">Imposto</SelectItem>
                         <SelectItem value="outros">Outros</SelectItem>
                       </SelectContent>
                     </Select>
@@ -453,6 +460,13 @@ const Costs = () => {
                         <SelectItem value="site">Site</SelectItem>
                         <SelectItem value="provedor">Provedor</SelectItem>
                         <SelectItem value="banco_de_dados">Banco de Dados</SelectItem>
+                        <SelectItem value="implantacao">Implantação</SelectItem>
+                        <SelectItem value="manutencao">Manutenção</SelectItem>
+                        <SelectItem value="operacional">Operacional</SelectItem>
+                        <SelectItem value="atualizacao">Atualização</SelectItem>
+                        <SelectItem value="usuario">Usuário</SelectItem>
+                        <SelectItem value="transacao">Transação</SelectItem>
+                        <SelectItem value="imposto">Imposto</SelectItem>
                         <SelectItem value="outros">Outros</SelectItem>
                       </SelectContent>
                     </Select>
