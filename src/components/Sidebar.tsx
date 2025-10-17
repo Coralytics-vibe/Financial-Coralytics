@@ -25,8 +25,8 @@ const Sidebar = () => {
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <NavLink to="/" className="flex items-center gap-2 font-semibold">
-            <DollarSign className="h-6 w-6" />
-            <span className="">Gestão Financeira</span>
+            <img src="/coralytics-logo.png" alt="Financial Coralytics Logo" className="h-8 w-8" /> {/* Nova logo */}
+            <span className="text-lg">Financial Coralytics</span> {/* Novo nome */}
           </NavLink>
         </div>
         <div className="flex-1">
