@@ -2,16 +2,24 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react";
+import { DollarSign, Users, TrendingUp, LayoutDashboard, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSession } from "@/context/SessionContext"; // Import useSession
 
 const navItems = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Custos", href: "/costs", icon: DollarSign },
   { name: "Lucros", href: "/profits", icon: TrendingUp },
   { name: "Sócios", href: "/partners", icon: Users },
 ];
 
 const Sidebar = () => {
+  const { supabase } = useSession();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="hidden border-r bg-muted/40 md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
@@ -39,6 +47,12 @@ const Sidebar = () => {
               </NavLink>
             ))}
           </nav>
+        </div>
+        <div className="mt-auto p-4">
+          <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive/90" onClick={handleLogout}>
+            <LogOut className="mr-3 h-4 w-4" />
+            Sair
+          </Button>
         </div>
       </div>
     </div>
