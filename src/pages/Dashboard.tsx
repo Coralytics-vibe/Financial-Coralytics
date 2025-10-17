@@ -49,7 +49,7 @@ const Dashboard = () => {
     if (!dateRange?.from) return costs;
     return costs.filter((cost) =>
       isWithinInterval(cost.date, {
-        start: dateRange.from!, // Fixed: Assert dateRange.from is a Date
+        start: dateRange.from!,
         end: dateRange.to || new Date(),
       })
     );
@@ -59,7 +59,7 @@ const Dashboard = () => {
     if (!dateRange?.from) return profits;
     return profits.filter((profit) =>
       isWithinInterval(profit.date, {
-        start: dateRange.from!, // Fixed: Assert dateRange.from is a Date
+        start: dateRange.from!,
         end: dateRange.to || new Date(),
       })
     );
@@ -71,9 +71,13 @@ const Dashboard = () => {
 
   const netProfitPercentage = totalCosts > 0 ? (netBalance / totalCosts) * 100 : 0;
 
+  // Modificado para ter chaves separadas para custos e lucros
   const chartData = [
-    { name: "Custos", valor: totalCosts },
-    { name: "Lucros", valor: totalProfits },
+    {
+      name: "Visão Geral", // Nome genérico para o eixo X
+      costs: totalCosts,
+      profits: totalProfits,
+    },
   ];
 
   return (
@@ -155,7 +159,9 @@ const Dashboard = () => {
                 <YAxis />
                 <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
                 <Legend />
-                <Bar dataKey="valor" fill="#8884d8" name="Valor Total" />
+                {/* Barras separadas com cores específicas */}
+                <Bar dataKey="costs" fill="hsl(var(--destructive))" name="Custos" />
+                <Bar dataKey="profits" fill="#3b82f6" name="Lucros" />
               </BarChart>
             </ResponsiveContainer>
           </div>
