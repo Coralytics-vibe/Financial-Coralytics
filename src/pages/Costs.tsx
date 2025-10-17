@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale"; // Importar o locale ptBR
 import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal } from "lucide-react";
 
 import {
@@ -253,7 +254,7 @@ const Costs = () => {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              format(field.value, "PPP", { locale: ptBR }) // Usar ptBR aqui
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -267,6 +268,7 @@ const Costs = () => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          locale={ptBR} // Adicionar locale aqui
                         />
                       </PopoverContent>
                     </Popover>
@@ -360,7 +362,7 @@ const Costs = () => {
                 <TableBody>
                   {costs.map((cost) => (
                     <TableRow key={cost.id}>
-                      <TableCell>{format(cost.date, "PPP")}</TableCell>
+                      <TableCell>{format(cost.date, "PPP", { locale: ptBR })}</TableCell> {/* Usar ptBR aqui */}
                       <TableCell>
                         <Badge variant="secondary">{cost.category.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase())}</Badge>
                       </TableCell>
@@ -501,7 +503,7 @@ const Costs = () => {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              format(field.value, "PPP", { locale: ptBR }) // Usar ptBR aqui
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -515,6 +517,7 @@ const Costs = () => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          locale={ptBR} // Adicionar locale aqui
                         />
                       </PopoverContent>
                     </Popover>
