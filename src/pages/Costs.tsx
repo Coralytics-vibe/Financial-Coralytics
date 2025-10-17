@@ -381,10 +381,12 @@ const Costs = () => {
                             return (
                               <Button
                                 key={payment.partnerId}
-                                variant={payment.paid ? "success" : "destructive"}
+                                className={cn(
+                                  "flex items-center gap-1",
+                                  payment.paid ? "button-success" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                )}
                                 size="sm"
                                 onClick={() => markCostPaymentAsPaid(cost.id, payment.partnerId)}
-                                className="flex items-center gap-1"
                               >
                                 {payment.paid ? <CheckCircle2 className="h-4 w-4" /> : <CircleDashed className="h-4 w-4" />}
                                 {partner?.name} (R$ {payment.amount.toFixed(2)})

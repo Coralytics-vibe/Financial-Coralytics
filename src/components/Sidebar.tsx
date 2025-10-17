@@ -2,13 +2,13 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react"; // Added LayoutDashboard, changed PiggyBank to TrendingUp
+import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react";
 
 const navItems = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard }, // New home and first item
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Custos", href: "/costs", icon: DollarSign },
   { name: "Lucros", href: "/profits", icon: TrendingUp },
-  { name: "Sócios", href: "/partners", icon: Users }, // Moved to last position
+  { name: "Sócios", href: "/partners", icon: Users },
 ];
 
 const Sidebar = () => {
@@ -30,7 +30,7 @@ const Sidebar = () => {
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                    isActive && "bg-muted text-primary"
+                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground hover:text-sidebar-accent-foreground" // Usando cores de destaque da sidebar
                   )
                 }
               >
