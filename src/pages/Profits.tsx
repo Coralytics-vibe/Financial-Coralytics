@@ -60,7 +60,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useProfits } from "@/context/ProfitsContext";
-import { Partner, Profit, ProfitDistribution, DocumentMetadata } from "@/types";
+import { Partner, Profit, ProfitDistribution, DocumentMetadata } from "@/types"; // Ensure DocumentMetadata is imported from types
 import DocumentUpload from "@/components/DocumentUpload"; // Import the new component
 import { supabase } from "@/integrations/supabase/client"; // Import supabase client
 import { showSuccess, showError } from "@/utils/toast";

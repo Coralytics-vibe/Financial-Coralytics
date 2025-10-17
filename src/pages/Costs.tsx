@@ -61,7 +61,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useCosts } from "@/context/CostsContext";
-import { Partner, Cost, DocumentMetadata } from "@/types";
+import { Partner, Cost, DocumentMetadata } from "@/types"; // Ensure DocumentMetadata is imported from types
 import DocumentUpload from "@/components/DocumentUpload"; // Import the new component
 import { supabase } from "@/integrations/supabase/client"; // Import supabase client
 import { showSuccess, showError } from "@/utils/toast";

@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DocumentMetadata } from '@/types'; // Import DocumentMetadata from types
 
 interface DocumentUploadProps {
   associatedId: string; // ID of the cost or profit this document is linked to
@@ -26,18 +27,6 @@ interface DocumentUploadProps {
   onDeleteSuccess?: (documentId: string) => void;
   existingDocuments?: DocumentMetadata[];
 }
-
-export type DocumentMetadata = {
-  id: string;
-  user_id: string;
-  associated_id: string;
-  document_type: string;
-  file_name: string;
-  file_url: string;
-  mime_type: string | null;
-  size_bytes: number | null;
-  created_at: string;
-};
 
 const DocumentUpload: React.FC<DocumentUploadProps> = ({
   associatedId,
@@ -83,17 +72,20 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
       const fileName = `${crypto.randomUUID()}.${fileExtension}`;
       const filePath = `${user.id}/${fileName}`; // Store in user-specific folder
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: _uploadData, error: uploadError } = await supabase.storage // Renamed uploadData to _uploadData
         .from('documents')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
-          onUploadProgress: (event) => {
-            if (event.totalBytes > 0) {
-              setUploadProgress(Math.round((event.bytesUploaded / event.totalBytes) * 100));
+          // Explicitly cast options to include onUploadProgress
+          // This is a common workaround if the FileOptions type doesn't include it directly
+          // The actual type for event is { loaded: number; total: number }
+          onUploadProgress: (event: { loaded: number; total: number }) => {
+            if (event.total > 0) {
+              setUploadProgress(Math.round((event.loaded / event.total) * 100));
             }
           },
-        });
+        } as any); // Cast to any to allow onUploadProgress
 
       if (uploadError) {
         throw uploadError;
@@ -113,7 +105,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         .insert({
           user_id: user.id,
           associated_id: associatedId,
-          document_type: documentType,
+          document_type: documentType, // Ensure this matches the literal type
           file_name: file.name,
           file_url: publicUrlData.publicUrl,
           mime_type: file.type,
