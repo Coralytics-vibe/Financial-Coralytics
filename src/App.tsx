@@ -2,7 +2,7 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "sonner";
+import { Toaster } from "sonner"; // Corrigido: Importar Toaster de sonner
 
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
@@ -25,8 +25,8 @@ function App() {
             <ProfitsProvider>
               <Routes>
                 <Route path="/" element={<Layout />}>
-                  <Route index element={<Dashboard />} /> {/* Dashboard agora é a página inicial */}
-                  <Route path="dashboard" element={<Dashboard />} /> {/* Mantém a rota explícita também */}
+                  <Route index element={<Partners />} />
+                  <Route path="dashboard" element={<Dashboard />} />
                   <Route path="costs" element={<Costs />} />
                   <Route path="profits" element={<Profits />} />
                   <Route path="partners" element={<Partners />} />
