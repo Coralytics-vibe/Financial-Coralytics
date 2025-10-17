@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale"; // Importar o locale ptBR
+import { ptBR } from "date-fns/locale";
 import { CalendarIcon, MoreHorizontal } from "lucide-react";
 
 import {
@@ -57,11 +57,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useProfits } from "@/context/ProfitsContext";
-import { Partner, Profit, ProfitDistribution } from "@/types";
+import { Partner, Profit, ProfitDistribution, DocumentMetadata } from "@/types";
+import DocumentUpload from "@/components/DocumentUpload"; // Import the new component
+import { supabase } from "@/integrations/supabase/client"; // Import supabase client
+import { showSuccess, showError } from "@/utils/toast";
 
 const profitSchema = z.object({
   date: z.date({
@@ -84,6 +86,7 @@ const Profits = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProfit, setSelectedProfit] = useState<Profit | null>(null);
+  const [profitDocuments, setProfitDocuments] = useState<DocumentMetadata[]>([]);
 
   const addForm = useForm<z.infer<typeof profitSchema>>({
     resolver: zodResolver(profitSchema),
@@ -104,6 +107,34 @@ const Profits = () => {
       category: "operacional",
     },
   });
+
+  const fetchDocuments = useCallback(async (associatedId: string) => {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('associated_id', associatedId);
+
+    if (error) {
+      console.error("Error fetching documents:", error);
+      showError("Erro ao carregar documentos.");
+      return [];
+    }
+    return data as DocumentMetadata[];
+  }, []);
+
+  useEffect(() => {
+    if (isEditDialogOpen && selectedProfit) {
+      editForm.reset({
+        date: selectedProfit.date,
+        value: selectedProfit.value,
+        source: selectedProfit.source,
+        category: selectedProfit.category,
+      });
+      fetchDocuments(selectedProfit.id).then(setProfitDocuments);
+    } else {
+      setProfitDocuments([]); // Clear documents when dialog closes
+    }
+  }, [isEditDialogOpen, selectedProfit, editForm, fetchDocuments]);
 
   const onAddSubmit = (values: z.infer<typeof profitSchema>) => {
     addProfit(values.date, values.value, values.source, values.category);
@@ -133,18 +164,22 @@ const Profits = () => {
 
   const openEditDialog = (profit: Profit) => {
     setSelectedProfit(profit);
-    editForm.reset({
-      date: profit.date,
-      value: profit.value,
-      source: profit.source,
-      category: profit.category,
-    });
     setIsEditDialogOpen(true);
   };
 
   const openDeleteDialog = (profit: Profit) => {
     setSelectedProfit(profit);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleDocumentUploadSuccess = (newDoc: DocumentMetadata) => {
+    setProfitDocuments((prev) => [...prev, newDoc]);
+    showSuccess("Documento anexado com sucesso!");
+  };
+
+  const handleDocumentDeleteSuccess = (deletedDocId: string) => {
+    setProfitDocuments((prev) => prev.filter((doc) => doc.id !== deletedDocId));
+    showSuccess("Documento removido com sucesso!");
   };
 
   const totalProfits = profits.reduce((sum, profit) => sum + profit.value, 0);
@@ -180,7 +215,7 @@ const Profits = () => {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP", { locale: ptBR }) // Usar ptBR aqui
+                              format(field.value, "PPP", { locale: ptBR })
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -194,7 +229,7 @@ const Profits = () => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
-                          locale={ptBR} // Adicionar locale aqui
+                          locale={ptBR}
                         />
                       </PopoverContent>
                     </Popover>
@@ -291,7 +326,7 @@ const Profits = () => {
                 <TableBody>
                   {profits.map((profit) => (
                     <TableRow key={profit.id}>
-                      <TableCell>{format(profit.date, "PPP", { locale: ptBR })}</TableCell> {/* Usar ptBR aqui */}
+                      <TableCell>{format(profit.date, "PPP", { locale: ptBR })}</TableCell>
                       <TableCell>{profit.source}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{profit.category.charAt(0).toUpperCase() + profit.category.slice(1)}</Badge>
@@ -366,7 +401,7 @@ const Profits = () => {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP", { locale: ptBR }) // Usar ptBR aqui
+                              format(field.value, "PPP", { locale: ptBR })
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -380,7 +415,7 @@ const Profits = () => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
-                          locale={ptBR} // Adicionar locale aqui
+                          locale={ptBR}
                         />
                       </PopoverContent>
                     </Popover>
@@ -437,6 +472,15 @@ const Profits = () => {
                   </FormItem>
                 )}
               />
+              {selectedProfit && (
+                <DocumentUpload
+                  associatedId={selectedProfit.id}
+                  documentType="payment_proof" // Default type for profits, can be made dynamic
+                  onUploadSuccess={handleDocumentUploadSuccess}
+                  onDeleteSuccess={handleDocumentDeleteSuccess}
+                  existingDocuments={profitDocuments}
+                />
+              )}
               <DialogFooter>
                 <Button type="submit">Salvar alterações</Button>
               </DialogFooter>
