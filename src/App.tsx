@@ -3,7 +3,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
-import { ThemeProvider } from "@/components/theme-provider"; // Importar ThemeProvider
+// Removido: import { ThemeProvider } from "@/components/theme-provider";
 
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
@@ -19,14 +19,14 @@ import { ProfitsProvider } from "@/context/ProfitsContext";
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme"> {/* Adicionado ThemeProvider */}
+    // Removido: <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <TooltipProvider>
         <Toaster />
         <Router>
           <AppRoutes />
         </Router>
       </TooltipProvider>
-    </ThemeProvider>
+    // Removido: </ThemeProvider>
   );
 }
 

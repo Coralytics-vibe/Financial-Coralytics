@@ -3,7 +3,7 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle"; // Importar ThemeToggle
+// Removido: import { ThemeToggle } from "./ThemeToggle";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -42,7 +42,7 @@ const Sidebar = () => {
           </nav>
         </div>
         <div className="mt-auto p-4">
-          <ThemeToggle /> {/* Adicionado o ThemeToggle aqui */}
+          {/* Removido: <ThemeToggle /> */}
         </div>
       </div>
     </div>

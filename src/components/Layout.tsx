@@ -14,11 +14,6 @@ const Layout = () => {
           </div>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          {/* Div de depuração para o tema */}
-          <div className="p-4 rounded-lg bg-background text-foreground border border-border">
-            <p>Este é um elemento de teste de tema.</p>
-            <p className="text-sm text-muted-foreground">O fundo e o texto devem mudar com o tema.</p>
-          </div>
           <Outlet />
         </main>
       </div>
