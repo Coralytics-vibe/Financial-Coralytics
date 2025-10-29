@@ -2,9 +2,8 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react"; // Removido LogOut
-// import { Button } from "@/components/ui/button"; // Removido importação de Button
-// import { useSession } from "@/context/SessionContext"; // Comentado temporariamente
+import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle"; // Importar ThemeToggle
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -14,12 +13,6 @@ const navItems = [
 ];
 
 const Sidebar = () => {
-  // const { supabase } = useSession(); // Comentado temporariamente
-
-  // const handleLogout = async () => { // Comentado temporariamente
-  //   await supabase.auth.signOut(); // Comentado temporariamente
-  // }; // Comentado temporariamente
-
   return (
     <div className="hidden border-r bg-muted/40 md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
@@ -49,11 +42,7 @@ const Sidebar = () => {
           </nav>
         </div>
         <div className="mt-auto p-4">
-          {/* Botão de Sair comentado temporariamente */}
-          {/* <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive/90" onClick={handleLogout}>
-            <LogOut className="mr-3 h-4 w-4" />
-            Sair
-          </Button> */}
+          <ThemeToggle /> {/* Adicionado o ThemeToggle aqui */}
         </div>
       </div>
     </div>
