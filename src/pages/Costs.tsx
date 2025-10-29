@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react"; // Removido useCallback
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal } from "lucide-react";
+import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal, ArrowDownWideNarrow, ArrowUpWideNarrow, XCircle } from "lucide-react";
 
 import {
   Card,
@@ -57,12 +57,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label"; // Import the Label component
 
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useCosts } from "@/context/CostsContext";
 import { Partner, Cost } from "@/types";
-// Removido showSuccess, showError
 
 const costSchema = z.object({
   category: z.enum(['site', 'provedor', 'banco_de_dados', 'implantacao', 'manutencao', 'operacional', 'atualizacao', 'usuario', 'transacao', 'imposto', 'outros'], {
@@ -87,6 +87,13 @@ const Costs = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCost, setSelectedCost] = useState<Cost | null>(null);
+
+  // Filter and Sort States
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterPayerId, setFilterPayerId] = useState<string>("all");
+  const [filterIsRecurrent, setFilterIsRecurrent] = useState<"all" | "yes" | "no">("all");
+  const [sortColumn, setSortColumn] = useState<keyof Cost | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const addForm = useForm<z.infer<typeof costSchema>>({
     resolver: zodResolver(costSchema),
@@ -178,7 +185,72 @@ const Costs = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const totalCosts = costs.reduce((sum, cost) => sum + cost.value, 0);
+  const filteredAndSortedCosts = useMemo(() => {
+    let currentCosts = [...costs];
+
+    // Apply filters
+    if (filterCategory !== "all") {
+      currentCosts = currentCosts.filter((cost) => cost.category === filterCategory);
+    }
+    if (filterPayerId !== "all") {
+      currentCosts = currentCosts.filter((cost) => cost.payerId === filterPayerId);
+    }
+    if (filterIsRecurrent !== "all") {
+      const isRecurrentBool = filterIsRecurrent === "yes";
+      currentCosts = currentCosts.filter((cost) => cost.isRecurrent === isRecurrentBool);
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      currentCosts.sort((a, b) => {
+        let valA: any;
+        let valB: any;
+
+        if (sortColumn === 'date') {
+          valA = a.date.getTime();
+          valB = b.date.getTime();
+        } else if (sortColumn === 'value') {
+          valA = a.value;
+          valB = b.value;
+        } else if (sortColumn === 'category') {
+          valA = a.category.toLowerCase();
+          valB = b.category.toLowerCase();
+        } else {
+          return 0;
+        }
+
+        if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+        if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return currentCosts;
+  }, [costs, filterCategory, filterPayerId, filterIsRecurrent, sortColumn, sortDirection]);
+
+  const totalCosts = filteredAndSortedCosts.reduce((sum, cost) => sum + cost.value, 0);
+
+  const handleClearFilters = () => {
+    setFilterCategory("all");
+    setFilterPayerId("all");
+    setFilterIsRecurrent("all");
+    setSortColumn(null);
+    setSortDirection("asc");
+  };
+
+  const costCategories = [
+    { value: 'site', label: 'Site' },
+    { value: 'provedor', label: 'Provedor' },
+    { value: 'banco_de_dados', label: 'Banco de Dados' },
+    { value: 'implantacao', label: 'Implantação' },
+    { value: 'manutencao', label: 'Manutenção' },
+    { value: 'operacional', label: 'Operacional' },
+    { value: 'atualizacao', label: 'Atualização' },
+    { value: 'usuario', label: 'Usuário' },
+    { value: 'transacao', label: 'Transação' },
+    { value: 'imposto', label: 'Imposto' },
+    { value: 'outros', label: 'Outros' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -207,17 +279,11 @@ const Costs = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="site">Site</SelectItem>
-                        <SelectItem value="provedor">Provedor</SelectItem>
-                        <SelectItem value="banco_de_dados">Banco de Dados</SelectItem>
-                        <SelectItem value="implantacao">Implantação</SelectItem>
-                        <SelectItem value="manutencao">Manutenção</SelectItem>
-                        <SelectItem value="operacional">Operacional</SelectItem>
-                        <SelectItem value="atualizacao">Atualização</SelectItem>
-                        <SelectItem value="usuario">Usuário</SelectItem>
-                        <SelectItem value="transacao">Transação</SelectItem>
-                        <SelectItem value="imposto">Imposto</SelectItem>
-                        <SelectItem value="outros">Outros</SelectItem>
+                        {costCategories.map(cat => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -346,6 +412,104 @@ const Costs = () => {
 
       <Card>
         <CardHeader>
+          <CardTitle>Filtros e Ordenação</CardTitle>
+          <CardDescription>
+            Filtre e ordene os custos para uma melhor visualização.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="filterCategory">Categoria</Label>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger id="filterCategory">
+                  <SelectValue placeholder="Todas as categorias" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {costCategories.map(cat => (
+                    <SelectItem key={`filter-${cat.value}`} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="filterPayer">Pagador</Label>
+              <Select value={filterPayerId} onValueChange={setFilterPayerId}>
+                <SelectTrigger id="filterPayer">
+                  <SelectValue placeholder="Todos os pagadores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os pagadores</SelectItem>
+                  {partners.map((partner: Partner) => (
+                    <SelectItem key={`filter-payer-${partner.id}`} value={partner.id}>
+                      {partner.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="filterRecurrent">Recorrente</Label>
+              <Select value={filterIsRecurrent} onValueChange={(value: "all" | "yes" | "no") => setFilterIsRecurrent(value)}>
+                <SelectTrigger id="filterRecurrent">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="yes">Sim</SelectItem>
+                  <SelectItem value="no">Não</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sortColumn">Ordenar por</Label>
+              <div className="flex gap-2">
+                <Select value={sortColumn || ""} onValueChange={(value: keyof Cost) => setSortColumn(value)}>
+                  <SelectTrigger id="sortColumn">
+                    <SelectValue placeholder="Coluna" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Data</SelectItem>
+                    <SelectItem value="value">Valor</SelectItem>
+                    <SelectItem value="category">Categoria</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={sortDirection} onValueChange={(value: "asc" | "desc") => setSortDirection(value)}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue placeholder="Direção" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">
+                      <div className="flex items-center gap-2">
+                        <ArrowUpWideNarrow className="h-4 w-4" /> Crescente
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="desc">
+                      <div className="flex items-center gap-2">
+                        <ArrowDownWideNarrow className="h-4 w-4" /> Decrescente
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button variant="outline" onClick={handleClearFilters} className="flex items-center gap-2">
+              <XCircle className="h-4 w-4" /> Limpar Filtros
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Custos Lançados</CardTitle>
           <CardDescription>
             Lista de todos os custos registrados e o status de pagamento de cada sócio.
@@ -353,10 +517,10 @@ const Costs = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4 text-right text-sm text-muted-foreground">
-            Total de Custos: <Badge variant="secondary">R$ {totalCosts.toFixed(2)}</Badge>
+            Total de Custos (filtrados): <Badge variant="secondary">R$ {totalCosts.toFixed(2)}</Badge>
           </div>
-          {costs.length === 0 ? (
-            <p className="text-muted-foreground">Nenhum custo registrado ainda.</p>
+          {filteredAndSortedCosts.length === 0 ? (
+            <p className="text-muted-foreground">Nenhum custo encontrado com os filtros aplicados.</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -373,7 +537,7 @@ const Costs = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {costs.map((cost) => (
+                  {filteredAndSortedCosts.map((cost) => (
                     <TableRow key={cost.id}>
                       <TableCell>{format(cost.date, "PPP", { locale: ptBR })}</TableCell>
                       <TableCell>
@@ -463,17 +627,11 @@ const Costs = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="site">Site</SelectItem>
-                        <SelectItem value="provedor">Provedor</SelectItem>
-                        <SelectItem value="banco_de_dados">Banco de Dados</SelectItem>
-                        <SelectItem value="implantacao">Implantação</SelectItem>
-                        <SelectItem value="manutencao">Manutenção</SelectItem>
-                        <SelectItem value="operacional">Operacional</SelectItem>
-                        <SelectItem value="atualizacao">Atualização</SelectItem>
-                        <SelectItem value="usuario">Usuário</SelectItem>
-                        <SelectItem value="transacao">Transação</SelectItem>
-                        <SelectItem value="imposto">Imposto</SelectItem>
-                        <SelectItem value="outros">Outros</SelectItem>
+                        {costCategories.map(cat => (
+                          <SelectItem key={`edit-${cat.value}`} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
