@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ThemeToggle() {
-  const { setTheme } = useTheme();
+  const { setTheme, theme } = useTheme(); // Obter o tema atual
+
+  console.log("Tema atual:", theme); // Registrar o tema atual
 
   return (
     <DropdownMenu>
@@ -25,13 +27,22 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+        <DropdownMenuItem onClick={() => {
+          setTheme("light");
+          console.log("Definindo tema para claro");
+        }}>
           Claro
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={() => {
+          setTheme("dark");
+          console.log("Definindo tema para escuro");
+        }}>
           Escuro
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem onClick={() => {
+          setTheme("system");
+          console.log("Definindo tema para sistema");
+        }}>
           Sistema
         </DropdownMenuItem>
       </DropdownMenuContent>
