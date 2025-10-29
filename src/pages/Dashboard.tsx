@@ -36,6 +36,7 @@ import {
 }
 from "recharts";
 import { DateRangePicker } from "@/components/DateRangePicker";
+import CostCategoryPieChart from "@/components/CostCategoryPieChart"; // Import the new component
 
 const Dashboard = () => {
   const { partners } = usePartners();
@@ -143,30 +144,35 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Visão Geral Financeira</CardTitle>
-          <CardDescription>
-            Comparativo entre custos e lucros totais.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
-                <Legend />
-                {/* Barras separadas com cores específicas */}
-                <Bar dataKey="costs" fill="hsl(var(--destructive))" name="Custos" />
-                <Bar dataKey="profits" fill="#3b82f6" name="Lucros" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Visão Geral Financeira</CardTitle>
+            <CardDescription>
+              Comparativo entre custos e lucros totais.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
+                  <Legend />
+                  {/* Barras separadas com cores específicas */}
+                  <Bar dataKey="costs" fill="hsl(var(--destructive))" name="Custos" />
+                  <Bar dataKey="profits" fill="#3b82f6" name="Lucros" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* New Cost Category Pie Chart */}
+        <CostCategoryPieChart costs={filteredCosts} />
+      </div>
 
       <Card>
         <CardHeader>
