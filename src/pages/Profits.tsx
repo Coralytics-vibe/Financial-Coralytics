@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react"; // Removido useCallback
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -60,10 +60,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useProfits } from "@/context/ProfitsContext";
-import { Partner, Profit, ProfitDistribution, DocumentMetadata } from "@/types"; // Ensure DocumentMetadata is imported from types
-import DocumentUpload from "@/components/DocumentUpload"; // Import the new component
-import { supabase } from "@/integrations/supabase/client"; // Import supabase client
-import { showSuccess, showError } from "@/utils/toast";
+import { Partner, Profit, ProfitDistribution } from "@/types";
+// Removido showSuccess, showError
 
 const profitSchema = z.object({
   date: z.date({
@@ -86,7 +84,6 @@ const Profits = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProfit, setSelectedProfit] = useState<Profit | null>(null);
-  const [profitDocuments, setProfitDocuments] = useState<DocumentMetadata[]>([]);
 
   const addForm = useForm<z.infer<typeof profitSchema>>({
     resolver: zodResolver(profitSchema),
@@ -108,20 +105,6 @@ const Profits = () => {
     },
   });
 
-  const fetchDocuments = useCallback(async (associatedId: string) => {
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('associated_id', associatedId);
-
-    if (error) {
-      console.error("Error fetching documents:", error);
-      showError("Erro ao carregar documentos.");
-      return [];
-    }
-    return data as DocumentMetadata[];
-  }, []);
-
   useEffect(() => {
     if (isEditDialogOpen && selectedProfit) {
       editForm.reset({
@@ -130,11 +113,8 @@ const Profits = () => {
         source: selectedProfit.source,
         category: selectedProfit.category,
       });
-      fetchDocuments(selectedProfit.id).then(setProfitDocuments);
-    } else {
-      setProfitDocuments([]); // Clear documents when dialog closes
     }
-  }, [isEditDialogOpen, selectedProfit, editForm, fetchDocuments]);
+  }, [isEditDialogOpen, selectedProfit, editForm]);
 
   const onAddSubmit = (values: z.infer<typeof profitSchema>) => {
     addProfit(values.date, values.value, values.source, values.category);
@@ -170,16 +150,6 @@ const Profits = () => {
   const openDeleteDialog = (profit: Profit) => {
     setSelectedProfit(profit);
     setIsDeleteDialogOpen(true);
-  };
-
-  const handleDocumentUploadSuccess = (newDoc: DocumentMetadata) => {
-    setProfitDocuments((prev) => [...prev, newDoc]);
-    showSuccess("Documento anexado com sucesso!");
-  };
-
-  const handleDocumentDeleteSuccess = (deletedDocId: string) => {
-    setProfitDocuments((prev) => prev.filter((doc) => doc.id !== deletedDocId));
-    showSuccess("Documento removido com sucesso!");
   };
 
   const totalProfits = profits.reduce((sum, profit) => sum + profit.value, 0);
@@ -472,15 +442,6 @@ const Profits = () => {
                   </FormItem>
                 )}
               />
-              {selectedProfit && (
-                <DocumentUpload
-                  associatedId={selectedProfit.id}
-                  documentType="payment_proof" // Default type for profits, can be made dynamic
-                  onUploadSuccess={handleDocumentUploadSuccess}
-                  onDeleteSuccess={handleDocumentDeleteSuccess}
-                  existingDocuments={profitDocuments}
-                />
-              )}
               <DialogFooter>
                 <Button type="submit">Salvar alterações</Button>
               </DialogFooter>

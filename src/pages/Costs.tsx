@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react"; // Removido useCallback
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -61,10 +61,8 @@ import {
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useCosts } from "@/context/CostsContext";
-import { Partner, Cost, DocumentMetadata } from "@/types"; // Ensure DocumentMetadata is imported from types
-import DocumentUpload from "@/components/DocumentUpload"; // Import the new component
-import { supabase } from "@/integrations/supabase/client"; // Import supabase client
-import { showSuccess, showError } from "@/utils/toast";
+import { Partner, Cost } from "@/types";
+// Removido showSuccess, showError
 
 const costSchema = z.object({
   category: z.enum(['site', 'provedor', 'banco_de_dados', 'implantacao', 'manutencao', 'operacional', 'atualizacao', 'usuario', 'transacao', 'imposto', 'outros'], {
@@ -89,7 +87,6 @@ const Costs = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCost, setSelectedCost] = useState<Cost | null>(null);
-  const [costDocuments, setCostDocuments] = useState<DocumentMetadata[]>([]);
 
   const addForm = useForm<z.infer<typeof costSchema>>({
     resolver: zodResolver(costSchema),
@@ -115,20 +112,6 @@ const Costs = () => {
     },
   });
 
-  const fetchDocuments = useCallback(async (associatedId: string) => {
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('associated_id', associatedId);
-
-    if (error) {
-      console.error("Error fetching documents:", error);
-      showError("Erro ao carregar documentos.");
-      return [];
-    }
-    return data as DocumentMetadata[];
-  }, []);
-
   useEffect(() => {
     if (isEditDialogOpen && selectedCost) {
       editForm.reset({
@@ -139,11 +122,8 @@ const Costs = () => {
         payerId: selectedCost.payerId,
         isRecurrent: selectedCost.isRecurrent,
       });
-      fetchDocuments(selectedCost.id).then(setCostDocuments);
-    } else {
-      setCostDocuments([]); // Clear documents when dialog closes
     }
-  }, [isEditDialogOpen, selectedCost, editForm, fetchDocuments]);
+  }, [isEditDialogOpen, selectedCost, editForm]);
 
   const onAddSubmit = (values: z.infer<typeof costSchema>) => {
     addCost(
@@ -196,16 +176,6 @@ const Costs = () => {
   const openDeleteDialog = (cost: Cost) => {
     setSelectedCost(cost);
     setIsDeleteDialogOpen(true);
-  };
-
-  const handleDocumentUploadSuccess = (newDoc: DocumentMetadata) => {
-    setCostDocuments((prev) => [...prev, newDoc]);
-    showSuccess("Documento anexado com sucesso!");
-  };
-
-  const handleDocumentDeleteSuccess = (deletedDocId: string) => {
-    setCostDocuments((prev) => prev.filter((doc) => doc.id !== deletedDocId));
-    showSuccess("Documento removido com sucesso!");
   };
 
   const totalCosts = costs.reduce((sum, cost) => sum + cost.value, 0);
@@ -619,15 +589,6 @@ const Costs = () => {
                   </FormItem>
                 )}
               />
-              {selectedCost && (
-                <DocumentUpload
-                  associatedId={selectedCost.id}
-                  documentType="invoice" // Default type for costs, can be made dynamic
-                  onUploadSuccess={handleDocumentUploadSuccess}
-                  onDeleteSuccess={handleDocumentDeleteSuccess}
-                  existingDocuments={costDocuments}
-                />
-              )}
               <DialogFooter>
                 <Button type="submit">Salvar alterações</Button>
               </DialogFooter>

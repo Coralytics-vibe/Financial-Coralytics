@@ -1,6 +1,6 @@
 "use client";
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Removido 'Navigate'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 
@@ -11,36 +11,30 @@ import Profits from "@/pages/Profits";
 import Partners from "@/pages/Partners";
 import PartnerDetails from "@/pages/PartnerDetails";
 import NotFound from "@/pages/NotFound";
-import Login from "@/pages/Login";
+// Removido Login
 
 import { PartnersProvider } from "@/context/PartnersContext";
 import { CostsProvider } from "@/context/CostsContext";
 import { ProfitsProvider } from "@/context/ProfitsContext";
-// Removido SessionContextProvider e useSession
-
-// Removido ProtectedRoute
 
 function App() {
   return (
     <TooltipProvider>
       <Toaster />
       <Router>
-        {/* SessionContextProvider removido temporariamente */}
         <AppRoutes />
       </Router>
     </TooltipProvider>
   );
 }
 
-// Componente separado para as rotas
 const AppRoutes: React.FC = () => {
   return (
     <PartnersProvider>
       <CostsProvider>
         <ProfitsProvider>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            {/* Rotas agora acessíveis diretamente sem proteção */}
+            {/* Rota de login removida */}
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />

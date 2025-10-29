@@ -14,17 +14,7 @@ export type CostPayment = {
   paid: boolean;
 };
 
-export type DocumentMetadata = {
-  id: string;
-  user_id: string;
-  associated_id: string; // ID of the cost or profit this document is linked to
-  document_type: 'invoice' | 'receipt' | 'payment_proof' | 'general';
-  file_name: string;
-  file_url: string;
-  mime_type: string | null;
-  size_bytes: number | null;
-  created_at: string;
-};
+// Removido DocumentMetadata
 
 export type Cost = {
   id: string;
@@ -35,7 +25,7 @@ export type Cost = {
   payerId: string; // ID of the partner who paid
   isRecurrent: boolean;
   payments: CostPayment[]; // How much each partner owes for this cost
-  documents?: DocumentMetadata[]; // Optional: documents associated with this cost
+  // Removido documents?: DocumentMetadata[];
 };
 
 export type ProfitDistribution = {
@@ -50,5 +40,5 @@ export type Profit = {
   source: string; // e.g., 'cliente', 'serviço', 'produto'
   category: 'operacional' | 'extraordinaria' | 'investimento' | 'outros'; // New: Category for profit
   distributions: ProfitDistribution[]; // How much each partner receives
-  documents?: DocumentMetadata[]; // Optional: documents associated with this profit
+  // Removido documents?: DocumentMetadata[];
 };
