@@ -2,9 +2,9 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { DollarSign, Users, TrendingUp, LayoutDashboard, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useSession } from "@/context/SessionContext"; // Import useSession
+import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react"; // Removido LogOut
+// import { Button } from "@/components/ui/button"; // Removido importação de Button
+// import { useSession } from "@/context/SessionContext"; // Comentado temporariamente
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -14,19 +14,19 @@ const navItems = [
 ];
 
 const Sidebar = () => {
-  const { supabase } = useSession();
+  // const { supabase } = useSession(); // Comentado temporariamente
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
+  // const handleLogout = async () => { // Comentado temporariamente
+  //   await supabase.auth.signOut(); // Comentado temporariamente
+  // }; // Comentado temporariamente
 
   return (
     <div className="hidden border-r bg-muted/40 md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <NavLink to="/" className="flex items-center gap-2 font-semibold">
-            <img src="/coralytics-logo.png" alt="Financial Coralytics Logo" className="h-8 w-8" /> {/* Nova logo */}
-            <span className="text-lg">Financial Coralytics</span> {/* Novo nome */}
+            <img src="/coralytics-logo.png" alt="Financial Coralytics Logo" className="h-8 w-8" />
+            <span className="text-lg">Financial Coralytics</span>
           </NavLink>
         </div>
         <div className="flex-1">
@@ -38,7 +38,7 @@ const Sidebar = () => {
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground hover:text-sidebar-accent-foreground" // Usando cores de destaque da sidebar
+                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground hover:text-sidebar-accent-foreground"
                   )
                 }
               >
@@ -49,10 +49,11 @@ const Sidebar = () => {
           </nav>
         </div>
         <div className="mt-auto p-4">
-          <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive/90" onClick={handleLogout}>
+          {/* Botão de Sair comentado temporariamente */}
+          {/* <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive/90" onClick={handleLogout}>
             <LogOut className="mr-3 h-4 w-4" />
             Sair
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>
