@@ -36,7 +36,8 @@ import {
 }
 from "recharts";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import CostCategoryPieChart from "@/components/CostCategoryPieChart"; // Import the new component
+import CostCategoryPieChart from "@/components/CostCategoryPieChart";
+import ProfitCategoryPieChart from "@/components/ProfitCategoryPieChart"; // Import the new component
 
 const Dashboard = () => {
   const { partners } = usePartners();
@@ -170,8 +171,13 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* New Cost Category Pie Chart */}
+        {/* Cost Category Pie Chart */}
         <CostCategoryPieChart costs={filteredCosts} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Profit Category Pie Chart */}
+        <ProfitCategoryPieChart profits={filteredProfits} />
       </div>
 
       <Card>
