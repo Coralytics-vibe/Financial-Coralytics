@@ -25,7 +25,7 @@ export const PartnersProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const userId = session?.user?.id;
 
   const fetchPartners = useCallback(async () => {
-    if (!userId) {
+    if (!userId) { // Still need userId to determine if authenticated, but not for filtering
       setPartners([]);
       setIsLoadingPartners(false);
       return;
@@ -33,8 +33,7 @@ export const PartnersProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setIsLoadingPartners(true);
     const { data, error } = await supabase
       .from('partners')
-      .select('*')
-      .eq('user_id', userId);
+      .select('*'); // Removed .eq('user_id', userId)
 
     if (error) {
       console.error("Error fetching partners:", error);

@@ -27,7 +27,7 @@ export const ProfitsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const userId = session?.user?.id;
 
   const fetchProfits = useCallback(async () => {
-    if (!userId) {
+    if (!userId) { // Still need userId to determine if authenticated, but not for filtering
       setProfits([]);
       setIsLoadingProfits(false);
       return;
@@ -35,8 +35,7 @@ export const ProfitsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsLoadingProfits(true);
     const { data, error } = await supabase
       .from('profits')
-      .select('*')
-      .eq('user_id', userId);
+      .select('*'); // Removed .eq('user_id', userId)
 
     if (error) {
       console.error("Error fetching profits:", error);

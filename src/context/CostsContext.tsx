@@ -47,7 +47,7 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const userId = session?.user?.id;
 
   const fetchCosts = useCallback(async () => {
-    if (!userId) {
+    if (!userId) { // Still need userId to determine if authenticated, but not for filtering
       setCosts([]);
       setIsLoadingCosts(false);
       return;
@@ -55,8 +55,7 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsLoadingCosts(true);
     const { data, error } = await supabase
       .from('costs')
-      .select('*')
-      .eq('user_id', userId);
+      .select('*'); // Removed .eq('user_id', userId)
 
     if (error) {
       console.error("Error fetching costs:", error);
