@@ -43,7 +43,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  // DialogTrigger, // Removido importação não utilizada
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -283,7 +283,7 @@ const Profits = () => {
               <FormField
                 control={addForm.control}
                 name="documentFile"
-                render={({ field: { onChange, value, ...rest } }) => (
+                render={({ field: { onChange } }) => ( // Removido 'value' e '..._rest'
                   <FormItem>
                     <FileUpload
                       label="Anexar Documento (Opcional)"
@@ -494,7 +494,7 @@ const Profits = () => {
               <FormField
                 control={editForm.control}
                 name="documentFile"
-                render={({ field: { onChange, value, ...rest } }) => (
+                render={({ field: { onChange } }) => ( // Removido 'value' e '..._rest'
                   <FormItem>
                     <FileUpload
                       label="Anexar Documento (Opcional)"

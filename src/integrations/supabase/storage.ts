@@ -12,7 +12,7 @@ export const uploadDocument = async (userId: string, file: File): Promise<string
   const fileExtension = file.name.split('.').pop();
   const fileName = `${userId}/${uuidv4()}.${fileExtension}`;
 
-  const { data, error } = await supabase.storage
+  const { data: _data, error } = await supabase.storage // Renomeado 'data' para '_data'
     .from(BUCKET_NAME)
     .upload(fileName, file, {
       cacheControl: '3600',

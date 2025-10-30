@@ -142,7 +142,7 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   const editCost = useCallback(
-    async (
+    async ( // Make the outer function async
       id: string,
       category: Cost['category'],
       description: string | undefined,
@@ -158,94 +158,98 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         showError("Usuário não autenticado. Não é possível editar custos.");
         return;
       }
-      setCosts(async (prevCosts) => {
-        const oldCost = prevCosts.find((c) => c.id === id);
-        if (!oldCost) return prevCosts;
 
-        // Handle document changes
-        let newDocumentUrl: string | undefined = currentDocumentUrl;
+      // Get current state synchronously
+      const currentCosts = costs; 
+      const oldCost = currentCosts.find((c) => c.id === id);
+      if (!oldCost) return;
 
-        if (removeExistingDocument && oldCost.documentUrl) {
-          await deleteDocument(oldCost.documentUrl);
-          newDocumentUrl = undefined;
+      // Handle document changes (all async operations here)
+      let newDocumentUrl: string | undefined = currentDocumentUrl;
+
+      if (removeExistingDocument && oldCost.documentUrl) {
+        await deleteDocument(oldCost.documentUrl);
+        newDocumentUrl = undefined;
+      }
+
+      if (documentFile) {
+        if (oldCost.documentUrl) {
+          await deleteDocument(oldCost.documentUrl); // Delete old document if new one is uploaded
         }
-
-        if (documentFile) {
-          if (oldCost.documentUrl) {
-            await deleteDocument(oldCost.documentUrl); // Delete old document if new one is uploaded
-          }
-          const uploadedUrl = await uploadDocument(userId, documentFile);
-          if (uploadedUrl) {
-            newDocumentUrl = uploadedUrl;
-          } else {
-            showError("Falha ao fazer upload do novo documento.");
-            return prevCosts;
-          }
+        const uploadedUrl = await uploadDocument(userId, documentFile);
+        if (uploadedUrl) {
+          newDocumentUrl = uploadedUrl;
+        } else {
+          showError("Falha ao fazer upload do novo documento.");
+          return;
         }
+      }
 
-        // Revert old financial impact
-        updatePartnerBalance(oldCost.payerId, -oldCost.value); 
-        oldCost.payments.forEach((payment) => {
-          if (payment.paid) {
-            updatePartnerBalance(payment.partnerId, payment.amount); 
-            updatePartnerBalance(oldCost.payerId, payment.amount); 
-          }
-        });
-
-        // Calculate new payments based on new value and current partners
-        const costPerPartner = value / partners.length;
-        const newPayments: CostPayment[] = partners.map((partner: Partner) => ({
-          partnerId: partner.id,
-          amount: costPerPartner,
-          paid: false, 
-        }));
-
-        const updatedCost: Cost = {
-          id,
-          category,
-          description,
-          value,
-          date,
-          payerId,
-          isRecurrent,
-          payments: newPayments,
-          documentUrl: newDocumentUrl,
-        };
-
-        // Apply new financial impact
-        updatePartnerBalance(payerId, value); 
-
-        showSuccess("Custo atualizado com sucesso!");
-        return prevCosts.map((c) => (c.id === id ? updatedCost : c));
+      // Revert old financial impact (synchronous updates to partner balances)
+      updatePartnerBalance(oldCost.payerId, -oldCost.value); 
+      oldCost.payments.forEach((payment) => {
+        if (payment.paid) {
+          updatePartnerBalance(payment.partnerId, payment.amount); 
+          updatePartnerBalance(oldCost.payerId, payment.amount); 
+        }
       });
+
+      // Calculate new payments based on new value and current partners
+      const costPerPartner = value / partners.length;
+      const newPayments: CostPayment[] = partners.map((partner: Partner) => ({
+        partnerId: partner.id,
+        amount: costPerPartner,
+        paid: false, 
+      }));
+
+      const updatedCost: Cost = {
+        id,
+        category,
+        description,
+        value,
+        date,
+        payerId,
+        isRecurrent,
+        payments: newPayments,
+        documentUrl: newDocumentUrl,
+      };
+
+      // Apply new financial impact (synchronous updates to partner balances)
+      updatePartnerBalance(payerId, value); 
+
+      // Update state synchronously after all async work is done
+      setCosts(prev => prev.map((c) => (c.id === id ? updatedCost : c)));
+
+      showSuccess("Custo atualizado com sucesso!");
     },
-    [partners, updatePartnerBalance, setCosts, userId]
+    [partners, updatePartnerBalance, setCosts, userId, costs] // Add 'costs' to dependencies
   );
 
   const deleteCost = useCallback(
-    async (costId: string) => {
-      setCosts(async (prevCosts) => {
-        const costToDelete = prevCosts.find((c) => c.id === costId);
-        if (!costToDelete) return prevCosts;
+    async (costId: string) => { // Make the outer function async
+      const currentCosts = costs; // Get current state synchronously
+      const costToDelete = currentCosts.find((c) => c.id === costId);
+      if (!costToDelete) return;
 
-        const hasPaidPayments = costToDelete.payments.some(p => p.paid);
-        if (hasPaidPayments) {
-          showError("Não é possível excluir um custo com pagamentos já realizados. Desfaça os pagamentos primeiro.");
-          return prevCosts;
-        }
+      const hasPaidPayments = costToDelete.payments.some(p => p.paid);
+      if (hasPaidPayments) {
+        showError("Não é possível excluir um custo com pagamentos já realizados. Desfaça os pagamentos primeiro.");
+        return;
+      }
 
-        // Delete associated document if it exists
-        if (costToDelete.documentUrl) {
-          await deleteDocument(costToDelete.documentUrl);
-        }
+      // Delete associated document if it exists (async operation)
+      if (costToDelete.documentUrl) {
+        await deleteDocument(costToDelete.documentUrl);
+      }
 
-        updatePartnerBalance(costToDelete.payerId, -costToDelete.value); 
+      updatePartnerBalance(costToDelete.payerId, -costToDelete.value); 
 
-        showSuccess("Custo excluído com sucesso!");
-        return prevCosts.filter((c) => c.id !== costId);
-      });
+      // Update state synchronously after all async work is done
+      setCosts(prev => prev.filter((c) => c.id !== costId));
+
+      showSuccess("Custo excluído com sucesso!");
     },
-    [updatePartnerBalance, setCosts]
+    [updatePartnerBalance, setCosts, costs] // Add 'costs' to dependencies
   );
 
   return (
