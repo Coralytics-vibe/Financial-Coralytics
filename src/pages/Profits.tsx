@@ -118,35 +118,41 @@ const Profits = () => {
 
   const onAddSubmit = async (values: z.infer<typeof profitSchema>) => {
     setIsUploading(true);
-    await addProfit(values.date, values.value, values.source, values.category, values.documentFile);
-    setIsUploading(false);
-    addForm.reset({
-      date: new Date(),
-      value: 0,
-      source: "",
-      category: "operacional",
-      documentFile: null,
-      documentUrl: null,
-      removeExistingDocument: false,
-    });
+    try {
+      await addProfit(values.date, values.value, values.source, values.category, values.documentFile);
+      addForm.reset({
+        date: new Date(),
+        value: 0,
+        source: "",
+        category: "operacional",
+        documentFile: null,
+        documentUrl: null,
+        removeExistingDocument: false,
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const onEditSubmit = async (values: z.infer<typeof profitSchema>) => {
     if (selectedProfit) {
       setIsUploading(true);
-      await editProfit(
-        selectedProfit.id,
-        values.date,
-        values.value,
-        values.source,
-        values.category,
-        values.documentFile,
-        values.documentUrl || undefined,
-        values.removeExistingDocument
-      );
-      setIsUploading(false);
-      setIsEditDialogOpen(false);
-      setSelectedProfit(null);
+      try {
+        await editProfit(
+          selectedProfit.id,
+          values.date,
+          values.value,
+          values.source,
+          values.category,
+          values.documentFile,
+          values.documentUrl || undefined,
+          values.removeExistingDocument
+        );
+        setIsEditDialogOpen(false);
+        setSelectedProfit(null);
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 

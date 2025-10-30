@@ -123,47 +123,53 @@ const Costs = () => {
 
   const onAddSubmit = async (values: z.infer<typeof costSchema>) => {
     setIsUploading(true);
-    await addCost(
-      values.category,
-      values.description,
-      values.value,
-      values.date,
-      values.payerId,
-      values.isRecurrent,
-      values.documentFile
-    );
-    setIsUploading(false);
-    addForm.reset({
-      category: 'outros',
-      description: "",
-      value: 0,
-      date: new Date(),
-      payerId: "",
-      isRecurrent: false,
-      documentFile: null,
-      documentUrl: null,
-      removeExistingDocument: false,
-    });
-  };
-
-  const onEditSubmit = async (values: z.infer<typeof costSchema>) => {
-    if (selectedCost) {
-      setIsUploading(true);
-      await editCost(
-        selectedCost.id,
+    try {
+      await addCost(
         values.category,
         values.description,
         values.value,
         values.date,
         values.payerId,
         values.isRecurrent,
-        values.documentFile,
-        values.documentUrl || undefined,
-        values.removeExistingDocument
+        values.documentFile
       );
+      addForm.reset({
+        category: 'outros',
+        description: "",
+        value: 0,
+        date: new Date(),
+        payerId: "",
+        isRecurrent: false,
+        documentFile: null,
+        documentUrl: null,
+        removeExistingDocument: false,
+      });
+    } finally {
       setIsUploading(false);
-      setIsEditDialogOpen(false);
-      setSelectedCost(null);
+    }
+  };
+
+  const onEditSubmit = async (values: z.infer<typeof costSchema>) => {
+    if (selectedCost) {
+      setIsUploading(true);
+      try {
+        await editCost(
+          selectedCost.id,
+          values.category,
+          values.description,
+          values.value,
+          values.date,
+          values.payerId,
+          values.isRecurrent,
+          values.documentFile,
+          values.documentUrl || undefined,
+          values.removeExistingDocument
+        );
+        setIsEditDialogOpen(false);
+        setSelectedCost(null);
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
