@@ -7,6 +7,7 @@ import MobileSidebar from "./MobileSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+// Removido: import { MadeWithDyad } from "./made-with-dyad"; // Removido daqui
 
 const Layout = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
