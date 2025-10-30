@@ -10,32 +10,43 @@ import Costs from "@/pages/Costs";
 import Profits from "@/pages/Profits";
 import Partners from "@/pages/Partners";
 import PartnerDetails from "@/pages/PartnerDetails";
+import Login from "@/pages/Login";
+import NotFound from "@/pages/NotFound";
 
-import { PartnersProvider } from "@/context/PartnersContext";
-import { CostsProvider } from "@/context/CostsContext";
-import { ProfitsProvider } from "@/context/ProfitsContext";
+// Os provedores de contexto serão movidos para o componente Layout
+// import { PartnersProvider } from "@/context/PartnersContext";
+// import { CostsProvider } from "@/context/CostsContext";
+// import { ProfitsProvider } from "@/context/ProfitsContext";
+import { AuthContextProvider } from "@/context/AuthContext";
+import AuthRedirect from "@/components/AuthRedirect";
 
 function App() {
   return (
     <TooltipProvider>
       <Toaster />
       <Router>
-        <PartnersProvider>
-          <CostsProvider>
-            <ProfitsProvider>
-              <Routes>
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<Dashboard />} /> {/* Dashboard agora é a página inicial */}
-                  <Route path="dashboard" element={<Dashboard />} /> {/* Mantém a rota explícita também */}
-                  <Route path="costs" element={<Costs />} />
-                  <Route path="profits" element={<Profits />} />
-                  <Route path="partners" element={<Partners />} />
-                  <Route path="partners/:id" element={<PartnerDetails />} />
-                </Route>
-              </Routes>
-            </ProfitsProvider>
-          </CostsProvider>
-        </PartnersProvider>
+        <AuthContextProvider>
+          <Routes>
+            {/* Public route for Login */}
+            <Route path="/login" element={<AuthRedirect isAuthenticated={false} />}>
+              <Route index element={<Login />} />
+            </Route>
+
+            {/* Protected routes */}
+            <Route path="/" element={<AuthRedirect isAuthenticated={true} />}>
+              <Route element={<Layout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="costs" element={<Costs />} />
+                <Route path="profits" element={<Profits />} />
+                <Route path="partners" element={<Partners />} />
+                <Route path="partners/:id" element={<PartnerDetails />} />
+              </Route>
+            </Route>
+            {/* Catch-all route for 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthContextProvider>
       </Router>
     </TooltipProvider>
   );
