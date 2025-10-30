@@ -5,6 +5,8 @@ import { Cost, CostPayment, Partner } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { usePartners } from "./PartnersContext";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { uploadDocument, deleteDocument } from "@/integrations/supabase/storage";
+import { useAuth } from "./AuthContext";
 
 interface CostsContextType {
   costs: Cost[];
@@ -14,8 +16,9 @@ interface CostsContextType {
     value: number,
     date: Date,
     payerId: string,
-    isRecurrent: boolean
-  ) => void;
+    isRecurrent: boolean,
+    documentFile: File | null
+  ) => Promise<void>;
   markCostPaymentAsPaid: (costId: string, partnerId: string) => void;
   editCost: (
     id: string,
@@ -24,9 +27,12 @@ interface CostsContextType {
     value: number,
     date: Date,
     payerId: string,
-    isRecurrent: boolean
-  ) => void;
-  deleteCost: (costId: string) => void;
+    isRecurrent: boolean,
+    documentFile: File | null,
+    currentDocumentUrl: string | undefined,
+    removeExistingDocument: boolean
+  ) => Promise<void>;
+  deleteCost: (costId: string) => Promise<void>;
 }
 
 const CostsContext = createContext<CostsContextType | undefined>(undefined);
@@ -34,19 +40,37 @@ const CostsContext = createContext<CostsContextType | undefined>(undefined);
 export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [costs, setCosts] = useLocalStorage<Cost[]>("financial_app_costs", []);
   const { partners, updatePartnerBalance } = usePartners();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
 
   const addCost = useCallback(
-    (
+    async (
       category: Cost['category'],
       description: string | undefined,
       value: number,
       date: Date,
       payerId: string,
-      isRecurrent: boolean
+      isRecurrent: boolean,
+      documentFile: File | null
     ) => {
+      if (!userId) {
+        showError("Usuário não autenticado. Não é possível adicionar custos.");
+        return;
+      }
       if (partners.length === 0) {
         showError("Adicione sócios antes de registrar custos.");
         return;
+      }
+
+      let documentUrl: string | undefined;
+      if (documentFile) {
+        const uploadedUrl = await uploadDocument(userId, documentFile);
+        if (uploadedUrl) {
+          documentUrl = uploadedUrl;
+        } else {
+          showError("Falha ao fazer upload do documento.");
+          return;
+        }
       }
 
       const costPerPartner = value / partners.length;
@@ -65,16 +89,16 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         payerId,
         isRecurrent,
         payments,
+        documentUrl,
       };
 
       setCosts((prev) => [...prev, newCost]);
 
-      // Update balances: Payer's balance increases by the total value
       updatePartnerBalance(payerId, value);
 
       showSuccess("Custo adicionado com sucesso!");
     },
-    [partners, updatePartnerBalance, setCosts]
+    [partners, updatePartnerBalance, setCosts, userId]
   );
 
   const markCostPaymentAsPaid = useCallback(
@@ -98,17 +122,15 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const payment = cost.payments.find((p: CostPayment) => p.partnerId === partnerId);
           if (payment) {
             const amount = payment.amount;
-            const isCurrentlyPaid = !payment.paid; // This is the state *before* the toggle, so it's the opposite of the new state
+            const isCurrentlyPaid = !payment.paid; 
 
             if (isCurrentlyPaid) {
-              // If it was unpaid and is now marked as paid
-              updatePartnerBalance(partnerId, -amount); // Partner's balance decreases (they paid their share)
-              updatePartnerBalance(cost.payerId, -amount); // Payer's balance decreases (they received reimbursement)
+              updatePartnerBalance(partnerId, -amount); 
+              updatePartnerBalance(cost.payerId, -amount); 
               showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} pagou sua parte.`);
             } else {
-              // If it was paid and is now marked as unpaid
-              updatePartnerBalance(partnerId, amount); // Partner's balance increases (they are owed again)
-              updatePartnerBalance(cost.payerId, amount); // Payer's balance increases (they are owed again)
+              updatePartnerBalance(partnerId, amount); 
+              updatePartnerBalance(cost.payerId, amount); 
               showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} teve o pagamento revertido.`);
             }
           }
@@ -120,25 +142,53 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   const editCost = useCallback(
-    (
+    async (
       id: string,
       category: Cost['category'],
       description: string | undefined,
       value: number,
       date: Date,
       payerId: string,
-      isRecurrent: boolean
+      isRecurrent: boolean,
+      documentFile: File | null,
+      currentDocumentUrl: string | undefined,
+      removeExistingDocument: boolean
     ) => {
-      setCosts((prevCosts) => {
+      if (!userId) {
+        showError("Usuário não autenticado. Não é possível editar custos.");
+        return;
+      }
+      setCosts(async (prevCosts) => {
         const oldCost = prevCosts.find((c) => c.id === id);
         if (!oldCost) return prevCosts;
 
+        // Handle document changes
+        let newDocumentUrl: string | undefined = currentDocumentUrl;
+
+        if (removeExistingDocument && oldCost.documentUrl) {
+          await deleteDocument(oldCost.documentUrl);
+          newDocumentUrl = undefined;
+        }
+
+        if (documentFile) {
+          if (oldCost.documentUrl) {
+            await deleteDocument(oldCost.documentUrl); // Delete old document if new one is uploaded
+          }
+          const uploadedUrl = await uploadDocument(userId, documentFile);
+          if (uploadedUrl) {
+            newDocumentUrl = uploadedUrl;
+          } else {
+            showError("Falha ao fazer upload do novo documento.");
+            return prevCosts;
+          }
+        }
+
         // Revert old financial impact
-        updatePartnerBalance(oldCost.payerId, -oldCost.value); // Payer's balance decreases by old total value
+        updatePartnerBalance(oldCost.payerId, -oldCost.value); 
         oldCost.payments.forEach((payment) => {
           if (payment.paid) {
-            updatePartnerBalance(payment.partnerId, payment.amount); // Partner gets money back
-            updatePartnerBalance(oldCost.payerId, payment.amount); // Payer "returns" reimbursement
+            updatePartnerBalance(payment.partnerId, payment.amount); 
+            updatePartnerBalance(oldCost.payerId, payment.amount); 
           }
         });
 
@@ -147,7 +197,7 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const newPayments: CostPayment[] = partners.map((partner: Partner) => ({
           partnerId: partner.id,
           amount: costPerPartner,
-          paid: false, // Reset paid status for simplicity on edit
+          paid: false, 
         }));
 
         const updatedCost: Cost = {
@@ -159,33 +209,37 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           payerId,
           isRecurrent,
           payments: newPayments,
+          documentUrl: newDocumentUrl,
         };
 
         // Apply new financial impact
-        updatePartnerBalance(payerId, value); // New payer's balance increases by new total value
+        updatePartnerBalance(payerId, value); 
 
         showSuccess("Custo atualizado com sucesso!");
         return prevCosts.map((c) => (c.id === id ? updatedCost : c));
       });
     },
-    [partners, updatePartnerBalance, setCosts]
+    [partners, updatePartnerBalance, setCosts, userId]
   );
 
   const deleteCost = useCallback(
-    (costId: string) => {
-      setCosts((prevCosts) => {
+    async (costId: string) => {
+      setCosts(async (prevCosts) => {
         const costToDelete = prevCosts.find((c) => c.id === costId);
         if (!costToDelete) return prevCosts;
 
-        // Check if any payments are marked as paid
         const hasPaidPayments = costToDelete.payments.some(p => p.paid);
         if (hasPaidPayments) {
           showError("Não é possível excluir um custo com pagamentos já realizados. Desfaça os pagamentos primeiro.");
           return prevCosts;
         }
 
-        // Revert financial impact
-        updatePartnerBalance(costToDelete.payerId, -costToDelete.value); // Payer's balance decreases by total value
+        // Delete associated document if it exists
+        if (costToDelete.documentUrl) {
+          await deleteDocument(costToDelete.documentUrl);
+        }
+
+        updatePartnerBalance(costToDelete.payerId, -costToDelete.value); 
 
         showSuccess("Custo excluído com sucesso!");
         return prevCosts.filter((c) => c.id !== costId);

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal } from "lucide-react";
+import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal, FileText } from "lucide-react";
 
 import {
   Card,
@@ -61,6 +61,7 @@ import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useCosts } from "@/context/CostsContext";
 import { Partner, Cost } from "@/types";
+import FileUpload from "@/components/FileUpload"; // Import the new component
 
 const costSchema = z.object({
   category: z.enum(['site', 'provedor', 'banco_de_dados', 'outros'], {
@@ -76,6 +77,9 @@ const costSchema = z.object({
   }),
   payerId: z.string().min(1, "O pagador é obrigatório."),
   isRecurrent: z.boolean().default(false),
+  documentFile: z.any().optional().nullable(), // For file input
+  documentUrl: z.string().optional().nullable(), // For existing document URL
+  removeExistingDocument: z.boolean().default(false), // To explicitly mark for removal
 });
 
 const Costs = () => {
@@ -85,6 +89,7 @@ const Costs = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCost, setSelectedCost] = useState<Cost | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const addForm = useForm<z.infer<typeof costSchema>>({
     resolver: zodResolver(costSchema),
@@ -95,6 +100,9 @@ const Costs = () => {
       date: new Date(),
       payerId: "",
       isRecurrent: false,
+      documentFile: null,
+      documentUrl: null,
+      removeExistingDocument: false,
     },
   });
 
@@ -107,18 +115,24 @@ const Costs = () => {
       date: new Date(),
       payerId: "",
       isRecurrent: false,
+      documentFile: null,
+      documentUrl: null,
+      removeExistingDocument: false,
     },
   });
 
-  const onAddSubmit = (values: z.infer<typeof costSchema>) => {
-    addCost(
+  const onAddSubmit = async (values: z.infer<typeof costSchema>) => {
+    setIsUploading(true);
+    await addCost(
       values.category,
       values.description,
       values.value,
       values.date,
       values.payerId,
-      values.isRecurrent
+      values.isRecurrent,
+      values.documentFile
     );
+    setIsUploading(false);
     addForm.reset({
       category: 'outros',
       description: "",
@@ -126,28 +140,36 @@ const Costs = () => {
       date: new Date(),
       payerId: "",
       isRecurrent: false,
+      documentFile: null,
+      documentUrl: null,
+      removeExistingDocument: false,
     });
   };
 
-  const onEditSubmit = (values: z.infer<typeof costSchema>) => {
+  const onEditSubmit = async (values: z.infer<typeof costSchema>) => {
     if (selectedCost) {
-      editCost(
+      setIsUploading(true);
+      await editCost(
         selectedCost.id,
         values.category,
         values.description,
         values.value,
         values.date,
         values.payerId,
-        values.isRecurrent
+        values.isRecurrent,
+        values.documentFile,
+        values.documentUrl || undefined,
+        values.removeExistingDocument
       );
+      setIsUploading(false);
       setIsEditDialogOpen(false);
       setSelectedCost(null);
     }
   };
 
-  const handleDeleteCost = () => {
+  const handleDeleteCost = async () => {
     if (selectedCost) {
-      deleteCost(selectedCost.id);
+      await deleteCost(selectedCost.id);
       setIsDeleteDialogOpen(false);
       setSelectedCost(null);
     }
@@ -157,11 +179,14 @@ const Costs = () => {
     setSelectedCost(cost);
     editForm.reset({
       category: cost.category,
-      description: cost.description,
+      description: cost.description || "",
       value: cost.value,
       date: cost.date,
       payerId: cost.payerId,
       isRecurrent: cost.isRecurrent,
+      documentFile: null, // No file selected initially for edit
+      documentUrl: cost.documentUrl || null, // Set current document URL
+      removeExistingDocument: false,
     });
     setIsEditDialogOpen(true);
   };
@@ -318,9 +343,25 @@ const Costs = () => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={addForm.control}
+                name="documentFile"
+                render={({ field: { onChange, value, ...rest } }) => (
+                  <FormItem>
+                    <FileUpload
+                      label="Anexar Documento (Opcional)"
+                      onFileChange={onChange}
+                      disabled={isUploading}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex gap-2">
-                <Button type="submit">Registrar Custo</Button>
-                <Button type="button" variant="outline" onClick={() => addForm.reset({ category: 'outros', description: "", value: 0, date: new Date(), payerId: "", isRecurrent: false })}>
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? "Registrando..." : "Registrar Custo"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => addForm.reset({ category: 'outros', description: "", value: 0, date: new Date(), payerId: "", isRecurrent: false, documentFile: null, documentUrl: null, removeExistingDocument: false })} disabled={isUploading}>
                   Limpar
                 </Button>
               </div>
@@ -354,6 +395,7 @@ const Costs = () => {
                     <TableHead>Pagador</TableHead>
                     <TableHead>Recorrente</TableHead>
                     <TableHead className="text-center">Pagamentos</TableHead>
+                    <TableHead className="text-center">Documento</TableHead> {/* New column */}
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -392,6 +434,15 @@ const Costs = () => {
                             );
                           })}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {cost.documentUrl ? (
+                          <a href={cost.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                            <FileText className="h-5 w-5 mx-auto" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -564,8 +615,29 @@ const Costs = () => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={editForm.control}
+                name="documentFile"
+                render={({ field: { onChange, value, ...rest } }) => (
+                  <FormItem>
+                    <FileUpload
+                      label="Anexar Documento (Opcional)"
+                      onFileChange={onChange}
+                      currentDocumentUrl={editForm.getValues("documentUrl") || undefined}
+                      onRemoveCurrentDocument={() => {
+                        editForm.setValue("documentUrl", null);
+                        editForm.setValue("removeExistingDocument", true);
+                      }}
+                      disabled={isUploading}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <DialogFooter>
-                <Button type="submit">Salvar alterações</Button>
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? "Salvando..." : "Salvar alterações"}
+                </Button>
               </DialogFooter>
             </form>
           </Form>

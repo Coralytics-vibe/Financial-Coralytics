@@ -23,6 +23,7 @@ export type Cost = {
   payerId: string; // ID of the partner who paid
   isRecurrent: boolean;
   payments: CostPayment[]; // How much each partner owes for this cost
+  documentUrl?: string; // New: Optional URL for an attached document
 };
 
 export type ProfitDistribution = {
@@ -37,4 +38,5 @@ export type Profit = {
   source: string; // e.g., 'cliente', 'serviço', 'produto'
   category: 'operacional' | 'extraordinaria' | 'investimento' | 'outros'; // New: Category for profit
   distributions: ProfitDistribution[]; // How much each partner receives
+  documentUrl?: string; // New: Optional URL for an attached document
 };

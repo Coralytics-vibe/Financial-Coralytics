@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, MoreHorizontal } from "lucide-react";
+import { CalendarIcon, MoreHorizontal, FileText } from "lucide-react";
 
 import {
   Card,
@@ -43,6 +43,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -61,6 +62,7 @@ import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useProfits } from "@/context/ProfitsContext";
 import { Partner, Profit, ProfitDistribution } from "@/types";
+import FileUpload from "@/components/FileUpload"; // Import the new component
 
 const profitSchema = z.object({
   date: z.date({
@@ -74,6 +76,9 @@ const profitSchema = z.object({
   category: z.enum(['operacional', 'extraordinaria', 'investimento', 'outros'], {
     required_error: "A categoria é obrigatória.",
   }),
+  documentFile: z.any().optional().nullable(), // For file input
+  documentUrl: z.string().optional().nullable(), // For existing document URL
+  removeExistingDocument: z.boolean().default(false), // To explicitly mark for removal
 });
 
 const Profits = () => {
@@ -83,6 +88,7 @@ const Profits = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProfit, setSelectedProfit] = useState<Profit | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const addForm = useForm<z.infer<typeof profitSchema>>({
     resolver: zodResolver(profitSchema),
@@ -91,6 +97,9 @@ const Profits = () => {
       value: 0,
       source: "",
       category: "operacional",
+      documentFile: null,
+      documentUrl: null,
+      removeExistingDocument: false,
     },
   });
 
@@ -101,30 +110,49 @@ const Profits = () => {
       value: 0,
       source: "",
       category: "operacional",
+      documentFile: null,
+      documentUrl: null,
+      removeExistingDocument: false,
     },
   });
 
-  const onAddSubmit = (values: z.infer<typeof profitSchema>) => {
-    addProfit(values.date, values.value, values.source, values.category);
+  const onAddSubmit = async (values: z.infer<typeof profitSchema>) => {
+    setIsUploading(true);
+    await addProfit(values.date, values.value, values.source, values.category, values.documentFile);
+    setIsUploading(false);
     addForm.reset({
       date: new Date(),
       value: 0,
       source: "",
       category: "operacional",
+      documentFile: null,
+      documentUrl: null,
+      removeExistingDocument: false,
     });
   };
 
-  const onEditSubmit = (values: z.infer<typeof profitSchema>) => {
+  const onEditSubmit = async (values: z.infer<typeof profitSchema>) => {
     if (selectedProfit) {
-      editProfit(selectedProfit.id, values.date, values.value, values.source, values.category);
+      setIsUploading(true);
+      await editProfit(
+        selectedProfit.id,
+        values.date,
+        values.value,
+        values.source,
+        values.category,
+        values.documentFile,
+        values.documentUrl || undefined,
+        values.removeExistingDocument
+      );
+      setIsUploading(false);
       setIsEditDialogOpen(false);
       setSelectedProfit(null);
     }
   };
 
-  const handleDeleteProfit = () => {
+  const handleDeleteProfit = async () => {
     if (selectedProfit) {
-      deleteProfit(selectedProfit.id);
+      await deleteProfit(selectedProfit.id);
       setIsDeleteDialogOpen(false);
       setSelectedProfit(null);
     }
@@ -137,6 +165,9 @@ const Profits = () => {
       value: profit.value,
       source: profit.source,
       category: profit.category,
+      documentFile: null, // No file selected initially for edit
+      documentUrl: profit.documentUrl || null, // Set current document URL
+      removeExistingDocument: false,
     });
     setIsEditDialogOpen(true);
   };
@@ -249,9 +280,25 @@ const Profits = () => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={addForm.control}
+                name="documentFile"
+                render={({ field: { onChange, value, ...rest } }) => (
+                  <FormItem>
+                    <FileUpload
+                      label="Anexar Documento (Opcional)"
+                      onFileChange={onChange}
+                      disabled={isUploading}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex gap-2">
-                <Button type="submit">Registrar Lucro</Button>
-                <Button type="button" variant="outline" onClick={() => addForm.reset({ date: new Date(), value: 0, source: "", category: "operacional" })}>
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? "Registrando..." : "Registrar Lucro"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => addForm.reset({ date: new Date(), value: 0, source: "", category: "operacional", documentFile: null, documentUrl: null, removeExistingDocument: false })} disabled={isUploading}>
                   Limpar
                 </Button>
               </div>
@@ -283,6 +330,7 @@ const Profits = () => {
                     <TableHead>Categoria</TableHead>
                     <TableHead className="text-right">Valor Total</TableHead>
                     <TableHead className="text-center">Distribuição</TableHead>
+                    <TableHead className="text-center">Documento</TableHead> {/* New column */}
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -306,6 +354,15 @@ const Profits = () => {
                             );
                           })}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {profit.documentUrl ? (
+                          <a href={profit.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                            <FileText className="h-5 w-5 mx-auto" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -434,8 +491,29 @@ const Profits = () => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={editForm.control}
+                name="documentFile"
+                render={({ field: { onChange, value, ...rest } }) => (
+                  <FormItem>
+                    <FileUpload
+                      label="Anexar Documento (Opcional)"
+                      onFileChange={onChange}
+                      currentDocumentUrl={editForm.getValues("documentUrl") || undefined}
+                      onRemoveCurrentDocument={() => {
+                        editForm.setValue("documentUrl", null);
+                        editForm.setValue("removeExistingDocument", true);
+                      }}
+                      disabled={isUploading}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <DialogFooter>
-                <Button type="submit">Salvar alterações</Button>
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading ? "Salvando..." : "Salvar alterações"}
+                </Button>
               </DialogFooter>
             </form>
           </Form>

@@ -5,7 +5,7 @@ import { usePartners } from "@/context/PartnersContext";
 import { useCosts } from "@/context/CostsContext";
 import { useProfits } from "@/context/ProfitsContext";
 import { format } from "date-fns";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 
 import {
   Card,
@@ -129,6 +129,7 @@ const PartnerDetails = () => {
                     <TableHead className="text-right">Valor Total</TableHead>
                     <TableHead>Pagador</TableHead>
                     <TableHead className="text-center">Status de Pagamento</TableHead>
+                    <TableHead className="text-center">Documento</TableHead> {/* New column */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -163,6 +164,15 @@ const PartnerDetails = () => {
                             <Badge variant="outline">Não Aplicável</Badge>
                           )}
                         </TableCell>
+                        <TableCell className="text-center">
+                          {cost.documentUrl ? (
+                            <a href={cost.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                              <FileText className="h-5 w-5 mx-auto" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -193,6 +203,7 @@ const PartnerDetails = () => {
                     <TableHead>Categoria</TableHead>
                     <TableHead className="text-right">Valor Total</TableHead>
                     <TableHead className="text-right">Recebido</TableHead>
+                    <TableHead className="text-center">Documento</TableHead> {/* New column */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -214,6 +225,15 @@ const PartnerDetails = () => {
                           <Badge variant="success">
                             R$ {distribution ? distribution.amount.toFixed(2) : "0.00"}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {profit.documentUrl ? (
+                            <a href={profit.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                              <FileText className="h-5 w-5 mx-auto" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
