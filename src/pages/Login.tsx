@@ -11,8 +11,9 @@ function Login() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <img src="/coralytics-logo.png" alt="Coralytics Logo" className="mx-auto h-16 w-16 mb-4" />
-          <CardTitle className="text-2xl font-bold">Bem-vindo ao Coralytics</CardTitle>
+          {/* <img src="/coralytics-logo.png" alt="Coralytics Logo" className="mx-auto h-16 w-16 mb-4" /> */}
+          <CardTitle className="text-3xl font-bold text-primary">Coralytics</CardTitle>
+          <p className="text-lg text-muted-foreground">Bem-vindo ao Coralytics</p>
         </CardHeader>
         <CardContent>
           <Auth

@@ -23,8 +23,8 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ onLinkClick }) => {
         className="flex items-center gap-2 text-lg font-semibold mb-4"
         onClick={onLinkClick}
       >
-        <img src="/coralytics-logo.png" alt="Financial Coralytics Logo" className="h-8 w-8" />
-        <span className="text-primary-foreground sr-only">Financial Coralytics</span>
+        {/* <img src="/coralytics-logo.png" alt="Financial Coralytics Logo" className="h-8 w-8" /> */}
+        <span className="text-primary-foreground">Coralytics</span>
       </NavLink>
       {navItems.map((item) => (
         <NavLink
