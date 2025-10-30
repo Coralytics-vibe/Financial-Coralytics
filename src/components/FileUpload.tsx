@@ -37,6 +37,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    // NEW LOGIC: If there was an existing document, and we're removing the *newly selected* file,
+    // it implies the user wants to clear the document field entirely.
+    // So, we should also trigger the removal of the *existing* document.
+    if (currentDocumentUrl && onRemoveCurrentDocument) {
+      onRemoveCurrentDocument();
+    }
   };
 
   const handleRemoveExistingDocument = () => {
