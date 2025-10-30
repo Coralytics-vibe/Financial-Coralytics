@@ -14,7 +14,8 @@ interface CostsContextType {
     value: number,
     date: Date,
     payerId: string,
-    isRecurrent: boolean
+    isRecurrent: boolean,
+    involvedPartnerIds: string[] // New parameter
   ) => void;
   markCostPaymentAsPaid: (costId: string, partnerId: string) => void;
   editCost: (
@@ -24,7 +25,8 @@ interface CostsContextType {
     value: number,
     date: Date,
     payerId: string,
-    isRecurrent: boolean
+    isRecurrent: boolean,
+    involvedPartnerIds: string[] // New parameter
   ) => void;
   deleteCost: (costId: string) => void;
 }
@@ -42,19 +44,26 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value: number,
       date: Date,
       payerId: string,
-      isRecurrent: boolean
+      isRecurrent: boolean,
+      involvedPartnerIds: string[] // New parameter
     ) => {
       if (partners.length === 0) {
         showError("Adicione sócios antes de registrar custos.");
         return;
       }
+      if (involvedPartnerIds.length === 0) {
+        showError("Selecione pelo menos um sócio envolvido no custo.");
+        return;
+      }
 
-      const costPerPartner = value / partners.length;
-      const payments: CostPayment[] = partners.map((partner: Partner) => ({
-        partnerId: partner.id,
-        amount: costPerPartner,
-        paid: false,
-      }));
+      const costPerPartner = value / involvedPartnerIds.length;
+      const payments: CostPayment[] = partners
+        .filter(p => involvedPartnerIds.includes(p.id)) // Only for involved partners
+        .map((partner: Partner) => ({
+          partnerId: partner.id,
+          amount: costPerPartner,
+          paid: false,
+        }));
 
       const newCost: Cost = {
         id: crypto.randomUUID(),
@@ -64,6 +73,7 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         date,
         payerId,
         isRecurrent,
+        involvedPartnerIds, // Include new field
         payments,
       };
 
@@ -127,11 +137,17 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value: number,
       date: Date,
       payerId: string,
-      isRecurrent: boolean
+      isRecurrent: boolean,
+      involvedPartnerIds: string[] // New parameter
     ) => {
       setCosts((prevCosts) => {
         const oldCost = prevCosts.find((c) => c.id === id);
         if (!oldCost) return prevCosts;
+
+        if (involvedPartnerIds.length === 0) {
+          showError("Selecione pelo menos um sócio envolvido no custo.");
+          return prevCosts; // Prevent update if no partners are involved
+        }
 
         // Revert old financial impact
         updatePartnerBalance(oldCost.payerId, -oldCost.value); // Payer's balance decreases by old total value
@@ -142,13 +158,15 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         });
 
-        // Calculate new payments based on new value and current partners
-        const costPerPartner = value / partners.length;
-        const newPayments: CostPayment[] = partners.map((partner: Partner) => ({
-          partnerId: partner.id,
-          amount: costPerPartner,
-          paid: false, // Reset paid status for simplicity on edit
-        }));
+        // Calculate new payments based on new value and new involved partners
+        const newCostPerPartner = value / involvedPartnerIds.length;
+        const newPayments: CostPayment[] = partners
+          .filter(p => involvedPartnerIds.includes(p.id))
+          .map((partner: Partner) => ({
+            partnerId: partner.id,
+            amount: newCostPerPartner,
+            paid: false, // Reset paid status for simplicity on edit
+          }));
 
         const updatedCost: Cost = {
           id,
@@ -158,6 +176,7 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           date,
           payerId,
           isRecurrent,
+          involvedPartnerIds, // Include new field
           payments: newPayments,
         };
 

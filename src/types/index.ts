@@ -14,18 +14,16 @@ export type CostPayment = {
   paid: boolean;
 };
 
-// Removido DocumentMetadata
-
 export type Cost = {
   id: string;
   category: 'site' | 'provedor' | 'banco_de_dados' | 'implantacao' | 'manutencao' | 'operacional' | 'atualizacao' | 'usuario' | 'transacao' | 'imposto' | 'outros';
   description?: string; // Optional description for the cost
   value: number;
   date: Date;
-  payerId: string; // ID of the partner who paid
+  payerId: string; // ID of the partner who paid the full amount initially
   isRecurrent: boolean;
-  payments: CostPayment[]; // How much each partner owes for this cost
-  // Removido documents?: DocumentMetadata[];
+  involvedPartnerIds: string[]; // IDs of partners who are involved in this cost and will share it
+  payments: CostPayment[]; // How much each involved partner owes for this cost
 };
 
 export type ProfitDistribution = {
@@ -40,5 +38,4 @@ export type Profit = {
   source: string; // e.g., 'cliente', 'serviço', 'produto'
   category: 'operacional' | 'extraordinaria' | 'investimento' | 'outros'; // New: Category for profit
   distributions: ProfitDistribution[]; // How much each partner receives
-  // Removido documents?: DocumentMetadata[];
 };

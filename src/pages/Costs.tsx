@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal, ArrowDownWideNarrow, ArrowUpWideNarrow, XCircle } from "lucide-react";
+import { CalendarIcon, CheckCircle2, CircleDashed, MoreHorizontal, ArrowDownWideNarrow, ArrowUpWideNarrow, XCircle, Users } from "lucide-react";
 
 import {
   Card,
@@ -57,7 +57,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label"; // Import the Label component
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
 
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
@@ -78,6 +79,7 @@ const costSchema = z.object({
   }),
   payerId: z.string().min(1, "O pagador é obrigatório."),
   isRecurrent: z.boolean().default(false),
+  involvedPartnerIds: z.array(z.string()).min(1, "Pelo menos um sócio deve estar envolvido no custo."), // New field
 });
 
 const Costs = () => {
@@ -86,6 +88,7 @@ const Costs = () => {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSelectInvolvedPartnersDialogOpen, setIsSelectInvolvedPartnersDialogOpen] = useState(false); // State for multi-select dialog
   const [selectedCost, setSelectedCost] = useState<Cost | null>(null);
 
   // Filter and Sort States
@@ -104,6 +107,7 @@ const Costs = () => {
       date: new Date(),
       payerId: "",
       isRecurrent: false,
+      involvedPartnerIds: [], // Default empty array
     },
   });
 
@@ -116,6 +120,7 @@ const Costs = () => {
       date: new Date(),
       payerId: "",
       isRecurrent: false,
+      involvedPartnerIds: [], // Default empty array
     },
   });
 
@@ -128,6 +133,7 @@ const Costs = () => {
         date: selectedCost.date,
         payerId: selectedCost.payerId,
         isRecurrent: selectedCost.isRecurrent,
+        involvedPartnerIds: selectedCost.involvedPartnerIds,
       });
     }
   }, [isEditDialogOpen, selectedCost, editForm]);
@@ -139,7 +145,8 @@ const Costs = () => {
       values.value,
       values.date,
       values.payerId,
-      values.isRecurrent
+      values.isRecurrent,
+      values.involvedPartnerIds // Pass new field
     );
     addForm.reset({
       category: 'outros',
@@ -148,6 +155,7 @@ const Costs = () => {
       date: new Date(),
       payerId: "",
       isRecurrent: false,
+      involvedPartnerIds: [],
     });
   };
 
@@ -160,7 +168,8 @@ const Costs = () => {
         values.value,
         values.date,
         values.payerId,
-        values.isRecurrent
+        values.isRecurrent,
+        values.involvedPartnerIds // Pass new field
       );
       setIsEditDialogOpen(false);
       setSelectedCost(null);
@@ -260,7 +269,7 @@ const Costs = () => {
         <CardHeader>
           <CardTitle>Adicionar Novo Custo</CardTitle>
           <CardDescription>
-            Registre um novo custo e ele será dividido igualmente entre os sócios.
+            Registre um novo custo e defina quais sócios estão envolvidos na divisão.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -360,7 +369,7 @@ const Costs = () => {
                 name="payerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pagador</FormLabel>
+                    <FormLabel>Pagador (Quem adiantou o valor total)</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -376,6 +385,65 @@ const Costs = () => {
                       </SelectContent>
                     </Select>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addForm.control}
+                name="involvedPartnerIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sócios Envolvidos (Quem divide o custo)</FormLabel>
+                    <FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsSelectInvolvedPartnersDialogOpen(true)}
+                        className="w-full justify-between"
+                      >
+                        {field.value.length > 0
+                          ? `${field.value.length} sócio(s) selecionado(s)`
+                          : "Selecionar sócios"}
+                        <Users className="ml-2 h-4 w-4" />
+                      </Button>
+                    </FormControl>
+                    <FormDescription>
+                      Selecione os sócios que dividirão este custo.
+                    </FormDescription>
+                    <FormMessage />
+                    <Dialog open={isSelectInvolvedPartnersDialogOpen} onOpenChange={setIsSelectInvolvedPartnersDialogOpen}>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Selecionar Sócios Envolvidos</DialogTitle>
+                          <DialogDescription>
+                            Marque os sócios que participarão da divisão deste custo.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          {partners.map((partner) => (
+                            <div key={partner.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`partner-${partner.id}`}
+                                checked={field.value.includes(partner.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    field.onChange([...field.value, partner.id]);
+                                  } else {
+                                    field.onChange(field.value.filter((id) => id !== partner.id));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`partner-${partner.id}`}>{partner.name}</Label>
+                            </div>
+                          ))}
+                        </div>
+                        <DialogFooter>
+                          <Button type="button" onClick={() => setIsSelectInvolvedPartnersDialogOpen(false)}>
+                            Confirmar
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </FormItem>
                 )}
               />
@@ -401,7 +469,7 @@ const Costs = () => {
               />
               <div className="flex gap-2">
                 <Button type="submit">Registrar Custo</Button>
-                <Button type="button" variant="outline" onClick={() => addForm.reset({ category: 'outros', description: "", value: 0, date: new Date(), payerId: "", isRecurrent: false })}>
+                <Button type="button" variant="outline" onClick={() => addForm.reset({ category: 'outros', description: "", value: 0, date: new Date(), payerId: "", isRecurrent: false, involvedPartnerIds: [] })}>
                   Limpar
                 </Button>
               </div>
@@ -531,6 +599,7 @@ const Costs = () => {
                     <TableHead>Descrição</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Pagador</TableHead>
+                    <TableHead>Envolvidos</TableHead> {/* New column */}
                     <TableHead>Recorrente</TableHead>
                     <TableHead className="text-center">Pagamentos</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -546,6 +615,15 @@ const Costs = () => {
                       <TableCell>{cost.description || '-'}</TableCell>
                       <TableCell className="text-right">R$ {cost.value.toFixed(2)}</TableCell>
                       <TableCell>{partners.find((p: Partner) => p.id === cost.payerId)?.name}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {cost.involvedPartnerIds.map(id => (
+                            <Badge key={id} variant="outline">
+                              {partners.find(p => p.id === id)?.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {cost.isRecurrent ? (
                           <Badge variant="outline">Sim</Badge>
@@ -708,7 +786,7 @@ const Costs = () => {
                 name="payerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pagador</FormLabel>
+                    <FormLabel>Pagador (Quem adiantou o valor total)</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -724,6 +802,65 @@ const Costs = () => {
                       </SelectContent>
                     </Select>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="involvedPartnerIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sócios Envolvidos (Quem divide o custo)</FormLabel>
+                    <FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsSelectInvolvedPartnersDialogOpen(true)}
+                        className="w-full justify-between"
+                      >
+                        {field.value.length > 0
+                          ? `${field.value.length} sócio(s) selecionado(s)`
+                          : "Selecionar sócios"}
+                        <Users className="ml-2 h-4 w-4" />
+                      </Button>
+                    </FormControl>
+                    <FormDescription>
+                      Selecione os sócios que dividirão este custo.
+                    </FormDescription>
+                    <FormMessage />
+                    <Dialog open={isSelectInvolvedPartnersDialogOpen} onOpenChange={setIsSelectInvolvedPartnersDialogOpen}>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Selecionar Sócios Envolvidos</DialogTitle>
+                          <DialogDescription>
+                            Marque os sócios que participarão da divisão deste custo.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          {partners.map((partner) => (
+                            <div key={partner.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`edit-partner-${partner.id}`}
+                                checked={field.value.includes(partner.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    field.onChange([...field.value, partner.id]);
+                                  } else {
+                                    field.onChange(field.value.filter((id) => id !== partner.id));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`edit-partner-${partner.id}`}>{partner.name}</Label>
+                            </div>
+                          ))}
+                        </div>
+                        <DialogFooter>
+                          <Button type="button" onClick={() => setIsSelectInvolvedPartnersDialogOpen(false)}>
+                            Confirmar
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </FormItem>
                 )}
               />
