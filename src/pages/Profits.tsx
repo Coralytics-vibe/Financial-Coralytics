@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react"; // Removido useCallback
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { CalendarIcon, MoreHorizontal } from "lucide-react";
 
 import {
@@ -57,11 +56,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+
 import { cn } from "@/lib/utils";
 import { usePartners } from "@/context/PartnersContext";
 import { useProfits } from "@/context/ProfitsContext";
 import { Partner, Profit, ProfitDistribution } from "@/types";
-// Removido showSuccess, showError
 
 const profitSchema = z.object({
   date: z.date({
@@ -105,17 +104,6 @@ const Profits = () => {
     },
   });
 
-  useEffect(() => {
-    if (isEditDialogOpen && selectedProfit) {
-      editForm.reset({
-        date: selectedProfit.date,
-        value: selectedProfit.value,
-        source: selectedProfit.source,
-        category: selectedProfit.category,
-      });
-    }
-  }, [isEditDialogOpen, selectedProfit, editForm]);
-
   const onAddSubmit = (values: z.infer<typeof profitSchema>) => {
     addProfit(values.date, values.value, values.source, values.category);
     addForm.reset({
@@ -144,6 +132,12 @@ const Profits = () => {
 
   const openEditDialog = (profit: Profit) => {
     setSelectedProfit(profit);
+    editForm.reset({
+      date: profit.date,
+      value: profit.value,
+      source: profit.source,
+      category: profit.category,
+    });
     setIsEditDialogOpen(true);
   };
 
@@ -185,7 +179,7 @@ const Profits = () => {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP", { locale: ptBR })
+                              format(field.value, "PPP")
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -199,7 +193,6 @@ const Profits = () => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
-                          locale={ptBR}
                         />
                       </PopoverContent>
                     </Popover>
@@ -296,7 +289,7 @@ const Profits = () => {
                 <TableBody>
                   {profits.map((profit) => (
                     <TableRow key={profit.id}>
-                      <TableCell>{format(profit.date, "PPP", { locale: ptBR })}</TableCell>
+                      <TableCell>{format(profit.date, "PPP")}</TableCell>
                       <TableCell>{profit.source}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{profit.category.charAt(0).toUpperCase() + profit.category.slice(1)}</Badge>
@@ -371,7 +364,7 @@ const Profits = () => {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP", { locale: ptBR })
+                              format(field.value, "PPP")
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -385,7 +378,6 @@ const Profits = () => {
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
-                          locale={ptBR}
                         />
                       </PopoverContent>
                     </Popover>

@@ -36,8 +36,6 @@ import {
 }
 from "recharts";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import CostCategoryPieChart from "@/components/CostCategoryPieChart";
-import ProfitCategoryPieChart from "@/components/ProfitCategoryPieChart";
 
 const Dashboard = () => {
   const { partners } = usePartners();
@@ -51,7 +49,7 @@ const Dashboard = () => {
     if (!dateRange?.from) return costs;
     return costs.filter((cost) =>
       isWithinInterval(cost.date, {
-        start: dateRange.from!,
+        start: dateRange.from!, // Fixed: Assert dateRange.from is a Date
         end: dateRange.to || new Date(),
       })
     );
@@ -61,7 +59,7 @@ const Dashboard = () => {
     if (!dateRange?.from) return profits;
     return profits.filter((profit) =>
       isWithinInterval(profit.date, {
-        start: dateRange.from!,
+        start: dateRange.from!, // Fixed: Assert dateRange.from is a Date
         end: dateRange.to || new Date(),
       })
     );
@@ -73,13 +71,9 @@ const Dashboard = () => {
 
   const netProfitPercentage = totalCosts > 0 ? (netBalance / totalCosts) * 100 : 0;
 
-  // Modificado para ter chaves separadas para custos e lucros
   const chartData = [
-    {
-      name: "Visão Geral", // Nome genérico para o eixo X
-      costs: totalCosts,
-      profits: totalProfits,
-    },
+    { name: "Custos", valor: totalCosts },
+    { name: "Lucros", valor: totalProfits },
   ];
 
   return (
@@ -145,7 +139,6 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Visão Geral Financeira (BarChart) - Full width */}
       <Card>
         <CardHeader>
           <CardTitle>Visão Geral Financeira</CardTitle>
@@ -162,19 +155,12 @@ const Dashboard = () => {
                 <YAxis />
                 <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
                 <Legend />
-                <Bar dataKey="costs" fill="hsl(var(--destructive))" name="Custos" />
-                <Bar dataKey="profits" fill="#3b82f6" name="Lucros" />
+                <Bar dataKey="valor" fill="#8884d8" name="Valor Total" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
-
-      {/* Pie Charts - Side by side */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <CostCategoryPieChart costs={filteredCosts} />
-        <ProfitCategoryPieChart profits={filteredProfits} />
-      </div>
 
       <Card>
         <CardHeader>

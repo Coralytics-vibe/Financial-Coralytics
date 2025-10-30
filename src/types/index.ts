@@ -16,14 +16,13 @@ export type CostPayment = {
 
 export type Cost = {
   id: string;
-  category: 'site' | 'provedor' | 'banco_de_dados' | 'implantacao' | 'manutencao' | 'operacional' | 'atualizacao' | 'usuario' | 'transacao' | 'imposto' | 'outros';
+  category: 'site' | 'provedor' | 'banco_de_dados' | 'outros';
   description?: string; // Optional description for the cost
   value: number;
   date: Date;
-  payerId: string; // ID of the partner who paid the full amount initially
+  payerId: string; // ID of the partner who paid
   isRecurrent: boolean;
-  involvedPartnerIds: string[]; // IDs of partners who are involved in this cost and will share it
-  payments: CostPayment[]; // How much each involved partner owes for this cost
+  payments: CostPayment[]; // How much each partner owes for this cost
 };
 
 export type ProfitDistribution = {

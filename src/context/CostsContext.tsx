@@ -14,8 +14,7 @@ interface CostsContextType {
     value: number,
     date: Date,
     payerId: string,
-    isRecurrent: boolean,
-    involvedPartnerIds: string[]
+    isRecurrent: boolean
   ) => void;
   markCostPaymentAsPaid: (costId: string, partnerId: string) => void;
   editCost: (
@@ -25,53 +24,15 @@ interface CostsContextType {
     value: number,
     date: Date,
     payerId: string,
-    isRecurrent: boolean,
-    involvedPartnerIds: string[]
+    isRecurrent: boolean
   ) => void;
   deleteCost: (costId: string) => void;
 }
 
 const CostsContext = createContext<CostsContextType | undefined>(undefined);
 
-// Custom deserializer for Cost objects to handle potential missing fields from old localStorage data
-const costDeserializer = (value: string): Cost[] => {
-  try {
-    const parsed = JSON.parse(value, (_key, val) => {
-      // Revive Date objects, similar to defaultDeserializer in use-local-storage
-      if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(val)) {
-        const date = new Date(val);
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-      return val;
-    });
-
-    // Ensure it's an array and each cost has involvedPartnerIds and payments
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.map((cost: any) => ({
-      ...cost,
-      involvedPartnerIds: Array.isArray(cost.involvedPartnerIds) ? cost.involvedPartnerIds : [],
-      payments: Array.isArray(cost.payments)
-        ? cost.payments.map((payment: any) => ({
-            partnerId: payment.partnerId,
-            amount: payment.amount,
-            paid: payment.paid ?? false, // Ensure 'paid' is boolean, default to false
-          }))
-        : [],
-      date: cost.date instanceof Date ? cost.date : new Date(cost.date), // Ensure date is Date object
-    }));
-  } catch (error) {
-    console.error("Failed to parse costs from localStorage:", error);
-    return []; // Return empty array on error
-  }
-};
-
 export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [costs, setCosts] = useLocalStorage<Cost[]>("financial_app_costs", [], undefined, costDeserializer);
+  const [costs, setCosts] = useLocalStorage<Cost[]>("financial_app_costs", []);
   const { partners, updatePartnerBalance } = usePartners();
 
   const addCost = useCallback(
@@ -81,26 +42,19 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value: number,
       date: Date,
       payerId: string,
-      isRecurrent: boolean,
-      involvedPartnerIds: string[]
+      isRecurrent: boolean
     ) => {
       if (partners.length === 0) {
         showError("Adicione sócios antes de registrar custos.");
         return;
       }
-      if (involvedPartnerIds.length === 0) {
-        showError("Selecione pelo menos um sócio envolvido no custo.");
-        return;
-      }
 
-      const costPerPartner = value / involvedPartnerIds.length;
-      const payments: CostPayment[] = partners
-        .filter(p => involvedPartnerIds.includes(p.id))
-        .map((partner: Partner) => ({
-          partnerId: partner.id,
-          amount: costPerPartner,
-          paid: false,
-        }));
+      const costPerPartner = value / partners.length;
+      const payments: CostPayment[] = partners.map((partner: Partner) => ({
+        partnerId: partner.id,
+        amount: costPerPartner,
+        paid: false,
+      }));
 
       const newCost: Cost = {
         id: crypto.randomUUID(),
@@ -110,12 +64,12 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         date,
         payerId,
         isRecurrent,
-        involvedPartnerIds,
         payments,
       };
 
       setCosts((prev) => [...prev, newCost]);
 
+      // Update balances: Payer's balance increases by the total value
       updatePartnerBalance(payerId, value);
 
       showSuccess("Custo adicionado com sucesso!");
@@ -144,15 +98,17 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const payment = cost.payments.find((p: CostPayment) => p.partnerId === partnerId);
           if (payment) {
             const amount = payment.amount;
-            const isCurrentlyPaid = !payment.paid;
+            const isCurrentlyPaid = !payment.paid; // This is the state *before* the toggle, so it's the opposite of the new state
 
             if (isCurrentlyPaid) {
-              updatePartnerBalance(partnerId, -amount);
-              updatePartnerBalance(cost.payerId, -amount);
+              // If it was unpaid and is now marked as paid
+              updatePartnerBalance(partnerId, -amount); // Partner's balance decreases (they paid their share)
+              updatePartnerBalance(cost.payerId, -amount); // Payer's balance decreases (they received reimbursement)
               showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} pagou sua parte.`);
             } else {
-              updatePartnerBalance(partnerId, amount);
-              updatePartnerBalance(cost.payerId, amount);
+              // If it was paid and is now marked as unpaid
+              updatePartnerBalance(partnerId, amount); // Partner's balance increases (they are owed again)
+              updatePartnerBalance(cost.payerId, amount); // Payer's balance increases (they are owed again)
               showSuccess(`${partners.find((p: Partner) => p.id === partnerId)?.name} teve o pagamento revertido.`);
             }
           }
@@ -171,36 +127,28 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value: number,
       date: Date,
       payerId: string,
-      isRecurrent: boolean,
-      involvedPartnerIds: string[]
+      isRecurrent: boolean
     ) => {
       setCosts((prevCosts) => {
         const oldCost = prevCosts.find((c) => c.id === id);
         if (!oldCost) return prevCosts;
 
-        if (involvedPartnerIds.length === 0) {
-          showError("Selecione pelo menos um sócio envolvido no custo.");
-          return prevCosts;
-        }
-
         // Revert old financial impact
-        updatePartnerBalance(oldCost.payerId, -oldCost.value);
+        updatePartnerBalance(oldCost.payerId, -oldCost.value); // Payer's balance decreases by old total value
         oldCost.payments.forEach((payment) => {
           if (payment.paid) {
-            updatePartnerBalance(payment.partnerId, payment.amount);
-            updatePartnerBalance(oldCost.payerId, payment.amount);
+            updatePartnerBalance(payment.partnerId, payment.amount); // Partner gets money back
+            updatePartnerBalance(oldCost.payerId, payment.amount); // Payer "returns" reimbursement
           }
         });
 
-        // Calculate new payments based on new value and new involved partners
-        const newCostPerPartner = value / involvedPartnerIds.length;
-        const newPayments: CostPayment[] = partners
-          .filter(p => involvedPartnerIds.includes(p.id))
-          .map((partner: Partner) => ({
-            partnerId: partner.id,
-            amount: newCostPerPartner,
-            paid: false,
-          }));
+        // Calculate new payments based on new value and current partners
+        const costPerPartner = value / partners.length;
+        const newPayments: CostPayment[] = partners.map((partner: Partner) => ({
+          partnerId: partner.id,
+          amount: costPerPartner,
+          paid: false, // Reset paid status for simplicity on edit
+        }));
 
         const updatedCost: Cost = {
           id,
@@ -210,12 +158,11 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           date,
           payerId,
           isRecurrent,
-          involvedPartnerIds,
           payments: newPayments,
         };
 
         // Apply new financial impact
-        updatePartnerBalance(payerId, value);
+        updatePartnerBalance(payerId, value); // New payer's balance increases by new total value
 
         showSuccess("Custo atualizado com sucesso!");
         return prevCosts.map((c) => (c.id === id ? updatedCost : c));
@@ -230,13 +177,15 @@ export const CostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const costToDelete = prevCosts.find((c) => c.id === costId);
         if (!costToDelete) return prevCosts;
 
+        // Check if any payments are marked as paid
         const hasPaidPayments = costToDelete.payments.some(p => p.paid);
         if (hasPaidPayments) {
           showError("Não é possível excluir um custo com pagamentos já realizados. Desfaça os pagamentos primeiro.");
           return prevCosts;
         }
 
-        updatePartnerBalance(costToDelete.payerId, -costToDelete.value);
+        // Revert financial impact
+        updatePartnerBalance(costToDelete.payerId, -costToDelete.value); // Payer's balance decreases by total value
 
         showSuccess("Custo excluído com sucesso!");
         return prevCosts.filter((c) => c.id !== costId);
