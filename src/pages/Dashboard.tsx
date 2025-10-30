@@ -37,7 +37,7 @@ import {
 from "recharts";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import CostCategoryPieChart from "@/components/CostCategoryPieChart";
-import ProfitCategoryPieChart from "@/components/ProfitCategoryPieChart"; // Import the new component
+import ProfitCategoryPieChart from "@/components/ProfitCategoryPieChart";
 
 const Dashboard = () => {
   const { partners } = usePartners();
@@ -145,38 +145,34 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Visão Geral Financeira</CardTitle>
-            <CardDescription>
-              Comparativo entre custos e lucros totais.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
-                  <Legend />
-                  {/* Barras separadas com cores específicas */}
-                  <Bar dataKey="costs" fill="hsl(var(--destructive))" name="Custos" />
-                  <Bar dataKey="profits" fill="#3b82f6" name="Lucros" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Visão Geral Financeira (BarChart) - Full width */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Visão Geral Financeira</CardTitle>
+          <CardDescription>
+            Comparativo entre custos e lucros totais.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
+                <Legend />
+                <Bar dataKey="costs" fill="hsl(var(--destructive))" name="Custos" />
+                <Bar dataKey="profits" fill="#3b82f6" name="Lucros" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Cost Category Pie Chart */}
+      {/* Pie Charts - Side by side */}
+      <div className="grid gap-4 md:grid-cols-2">
         <CostCategoryPieChart costs={filteredCosts} />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Profit Category Pie Chart */}
         <ProfitCategoryPieChart profits={filteredProfits} />
       </div>
 
