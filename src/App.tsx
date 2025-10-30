@@ -13,7 +13,9 @@ import PartnerDetails from "@/pages/PartnerDetails";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
-// Removidos: PartnersProvider, CostsProvider, ProfitsProvider
+import { PartnersProvider } from "@/context/PartnersContext";
+import { CostsProvider } from "@/context/CostsContext";
+import { ProfitsProvider } from "@/context/ProfitsContext";
 import { SessionContextProvider, useSession } from "@/context/SessionContext";
 import { MadeWithDyad } from "./components/made-with-dyad";
 import { Button } from "./components/ui/button";
@@ -64,7 +66,18 @@ const AppRoutes: React.FC = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         {session ? (
-          <Route path="/" element={<Layout />}>
+          <Route
+            path="/"
+            element={
+              <PartnersProvider>
+                <CostsProvider>
+                  <ProfitsProvider>
+                    <Layout />
+                  </ProfitsProvider>
+                </CostsProvider>
+              </PartnersProvider>
+            }
+          >
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="costs" element={<Costs />} />
