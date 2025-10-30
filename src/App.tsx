@@ -10,13 +10,11 @@ import Costs from "@/pages/Costs";
 import Profits from "@/pages/Profits";
 import Partners from "@/pages/Partners";
 import PartnerDetails from "@/pages/PartnerDetails";
-import Login from "@/pages/Login"; // Importar a página de Login
+import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
-import { PartnersProvider } from "@/context/PartnersContext";
-import { CostsProvider } from "@/context/CostsContext";
-import { ProfitsProvider } from "@/context/ProfitsContext";
-import { SessionContextProvider, useSession } from "@/context/SessionContext"; // Importar SessionContextProvider e useSession
+// Removidos: PartnersProvider, CostsProvider, ProfitsProvider
+import { SessionContextProvider, useSession } from "@/context/SessionContext";
 import { MadeWithDyad } from "./components/made-with-dyad";
 import { Button } from "./components/ui/button";
 import { LogOut } from "lucide-react";
@@ -28,7 +26,7 @@ function App() {
     <TooltipProvider>
       <Toaster />
       <Router>
-        <SessionContextProvider> {/* Envolver tudo com SessionContextProvider */}
+        <SessionContextProvider>
           <AppRoutes />
         </SessionContextProvider>
       </Router>
@@ -75,12 +73,11 @@ const AppRoutes: React.FC = () => {
             <Route path="partners/:id" element={<PartnerDetails />} />
           </Route>
         ) : (
-          // Redireciona qualquer rota protegida para o login se não houver sessão
           <Route path="*" element={<Login />} />
         )}
-        <Route path="*" element={<NotFound />} /> {/* Catch-all para rotas não encontradas, incluindo as protegidas */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
-      {!session && <MadeWithDyad />} {/* Mostrar MadeWithDyad apenas na tela de login */}
+      {!session && <MadeWithDyad />}
     </>
   );
 };

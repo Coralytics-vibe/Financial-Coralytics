@@ -38,8 +38,6 @@ function Login() {
                     inputLabelText: 'hsl(var(--muted-foreground))',
                     messageText: 'hsl(var(--foreground))',
                     messageBackground: 'hsl(var(--background))',
-                    anchorText: 'hsl(var(--primary))',
-                    anchorTextHover: 'hsl(var(--primary-foreground))',
                   },
                 },
               },
@@ -53,9 +51,8 @@ function Login() {
                   email_input_placeholder: 'Digite seu e-mail',
                   password_input_placeholder: 'Digite sua senha',
                   button_label: 'Entrar',
-                  social_auth_typography: 'Ou continue com',
                   link_text: 'Já tem uma conta? Entrar',
-                  confirmation_link_text: 'Verifique seu e-mail para o link de confirmação',
+                  confirmation_text: 'Verifique seu e-mail para o link de confirmação', // Corrigido aqui
                 },
                 sign_up: {
                   email_label: 'Seu e-mail',
@@ -63,9 +60,8 @@ function Login() {
                   email_input_placeholder: 'Digite seu e-mail',
                   password_input_placeholder: 'Crie sua senha',
                   button_label: 'Cadastrar',
-                  social_auth_typography: 'Ou continue com',
                   link_text: 'Não tem uma conta? Cadastrar',
-                  confirmation_link_text: 'Verifique seu e-mail para o link de confirmação',
+                  confirmation_text: 'Verifique seu e-mail para o link de confirmação', // Corrigido aqui
                 },
                 forgotten_password: {
                   email_label: 'Seu e-mail',
