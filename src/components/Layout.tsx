@@ -31,7 +31,7 @@ const Layout = () => {
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
+            <SheetContent side="left" className="flex flex-col bg-primary text-primary-foreground">
               <MobileSidebar onLinkClick={handleLinkClick} />
             </SheetContent>
           </Sheet>

@@ -3,7 +3,6 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { DollarSign, Users, TrendingUp, LayoutDashboard } from "lucide-react";
-// Removido: import { ThemeToggle } from "./ThemeToggle";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -14,12 +13,12 @@ const navItems = [
 
 const Sidebar = () => {
   return (
-    <div className="hidden border-r bg-muted/40 md:block">
+    <div className="hidden border-r bg-primary md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <NavLink to="/" className="flex items-center gap-2 font-semibold">
             <img src="/coralytics-logo.png" alt="Financial Coralytics Logo" className="h-8 w-8" />
-            <span className="text-lg">Financial Coralytics</span>
+            <span className="text-primary-foreground">Coralytics</span>
           </NavLink>
         </div>
         <div className="flex-1">
@@ -30,8 +29,8 @@ const Sidebar = () => {
                 to={item.href}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground hover:text-sidebar-accent-foreground"
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-primary-foreground transition-all hover:bg-primary-foreground/20",
+                    isActive && "bg-primary-foreground/20"
                   )
                 }
               >
@@ -40,9 +39,6 @@ const Sidebar = () => {
               </NavLink>
             ))}
           </nav>
-        </div>
-        <div className="mt-auto p-4">
-          {/* Removido: <ThemeToggle /> */}
         </div>
       </div>
     </div>

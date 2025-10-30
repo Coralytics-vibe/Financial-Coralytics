@@ -24,7 +24,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ onLinkClick }) => {
         onClick={onLinkClick}
       >
         <img src="/coralytics-logo.png" alt="Financial Coralytics Logo" className="h-8 w-8" />
-        <span className="sr-only">Financial Coralytics</span>
+        <span className="text-primary-foreground sr-only">Financial Coralytics</span>
       </NavLink>
       {navItems.map((item) => (
         <NavLink
@@ -32,8 +32,8 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ onLinkClick }) => {
           to={item.href}
           className={({ isActive }) =>
             cn(
-              "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
-              isActive && "bg-muted text-foreground"
+              "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-primary-foreground hover:bg-primary-foreground/20",
+              isActive && "bg-primary-foreground/20"
             )
           }
           onClick={onLinkClick}
