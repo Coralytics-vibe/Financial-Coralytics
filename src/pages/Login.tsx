@@ -52,7 +52,7 @@ function Login() {
                   password_input_placeholder: 'Digite sua senha',
                   button_label: 'Entrar',
                   link_text: 'Já tem uma conta? Entrar',
-                  confirmation_text: 'Verifique seu e-mail para o link de confirmação', // Corrigido aqui
+                  confirmation_text: 'Verifique seu e-mail para o link de confirmação', // Corrigido para confirmation_text
                 },
                 sign_up: {
                   email_label: 'Seu e-mail',
@@ -61,7 +61,7 @@ function Login() {
                   password_input_placeholder: 'Crie sua senha',
                   button_label: 'Cadastrar',
                   link_text: 'Não tem uma conta? Cadastrar',
-                  confirmation_text: 'Verifique seu e-mail para o link de confirmação', // Corrigido aqui
+                  confirmation_text: 'Verifique seu e-mail para o link de confirmação', // Corrigido para confirmation_text
                 },
                 forgotten_password: {
                   email_label: 'Seu e-mail',
